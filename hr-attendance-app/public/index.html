@@ -1,11 +1,11 @@
-Here's the updated version with the stable login/register form heights. I've made the **Create Admin Account** and **Back to Login** transitions perfectly smooth with no height jumps:
+Here is the clean HTML code for your Tikix HR Attendance dashboard with the white theme and stable login form heights:
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tikix HR Attendance — Executive Command Center (White)</title>
+    <title>Tikix HR Attendance — Executive Command Center</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
@@ -96,7 +96,6 @@ Here's the updated version with the stable login/register form heights. I've mad
             filter: drop-shadow(0 4px 8px rgba(13, 148, 136, 0.15));
         }
 
-        /* FIXED HEIGHT AUTH CONTAINER - prevents any height shifting */
         .auth-forms-container {
             position: relative;
             min-height: 380px;
@@ -115,16 +114,15 @@ Here's the updated version with the stable login/register form heights. I've mad
 
 <body class="text-slate-700 antialiased h-screen overflow-hidden">
 
-    <!-- AUTH VIEW (white theme, stable height) -->
     <div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#f8fafc] overflow-y-auto">
         <div class="max-w-md w-full space-y-6 my-auto">
             <div class="text-center space-y-3">
                 <div class="inline-flex p-3.5 rounded-2xl bg-white/80 border border-slate-200 backdrop-blur-md shadow-lg items-center justify-center logo-glow min-h-[64px]">
-                    <img id="auth-logo-img" src="../tikix.svg" alt="Tikix HR Logo" class="h-10 w-auto object-contain">
+                    <img id="auth-logo-img" src="tikix.png" alt="Tikix HR Logo" class="h-10 w-auto object-contain">
                 </div>
                 <div>
                     <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
-                        Gigi <span class="text-xs px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-semibold tracking-wider uppercase">HR Attendance</span>
+                        Tikix <span class="text-xs px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-semibold tracking-wider uppercase">HR Attendance</span>
                     </h1>
                     <p class="text-xs text-slate-500 mt-1">Supervision & Timecard Intelligence Command Center</p>
                 </div>
@@ -136,9 +134,7 @@ Here's the updated version with the stable login/register form heights. I've mad
                     <span id="auth-alert-message"></span>
                 </div>
 
-                <!-- FIXED HEIGHT AUTH FORMS CONTAINER -->
                 <div class="auth-forms-container">
-                    <!-- LOGIN FORM -->
                     <div id="form-login" class="auth-form-panel space-y-4">
                         <div class="border-b border-slate-100 pb-3">
                             <h2 class="text-base font-bold text-slate-800">HR Portal Access</h2>
@@ -166,7 +162,6 @@ Here's the updated version with the stable login/register form heights. I've mad
                         </p>
                     </div>
 
-                    <!-- REGISTER FORM -->
                     <div id="form-register" class="auth-form-panel hidden space-y-4">
                         <div class="border-b border-slate-100 pb-3">
                             <h2 class="text-base font-bold text-slate-800">Create Admin Account</h2>
@@ -182,7 +177,6 @@ Here's the updated version with the stable login/register form heights. I've mad
                         <p class="text-center text-xs text-slate-500 pt-1">Already have an account? <button type="button" onclick="showAuthSubForm('login')" class="text-teal-600 hover:underline font-bold">Back to Login</button></p>
                     </div>
 
-                    <!-- FORGOT FORM -->
                     <div id="form-forgot" class="auth-form-panel hidden space-y-4">
                         <div class="border-b border-slate-100 pb-3">
                             <h2 class="text-base font-bold text-slate-800">Reset Password</h2>
@@ -199,13 +193,12 @@ Here's the updated version with the stable login/register form heights. I've mad
         </div>
     </div>
 
-    <!-- DASHBOARD VIEW (white theme) -->
     <div id="dashboard-view" class="hidden h-screen w-full flex">
         <aside class="w-72 bg-white/90 border-r border-slate-200 flex flex-col justify-between shrink-0 z-20 backdrop-blur-xl">
             <div>
                 <div class="h-20 px-6 border-b border-slate-200 flex items-center justify-between">
                     <div class="flex items-center gap-3 min-h-[32px]">
-                        <img id="sidebar-logo-img" src="../tikix.png" alt="Tikix Logo" class="h-8 w-auto object-contain logo-glow">
+                        <img id="sidebar-logo-img" src="tikix.png" alt="Tikix Logo" class="h-8 w-auto object-contain logo-glow">
                         <div>
                             <p class="text-[10px] text-slate-500 font-medium">Attendance Command</p>
                         </div>
@@ -322,7 +315,6 @@ Here's the updated version with the stable login/register form heights. I've mad
         </main>
     </div>
 
-    <!-- MANUAL MODAL -->
     <div id="manualModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
         <div class="surface-card rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 shadow-2xl">
             <div class="px-6 py-5 border-b border-slate-100 flex items-center gap-3.5 bg-white/70">
@@ -349,7 +341,6 @@ Here's the updated version with the stable login/register form heights. I've mad
         </div>
     </div>
 
-    <!-- LOGS MODAL -->
     <div id="logsModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
         <div class="surface-card rounded-2xl max-w-2xl w-full overflow-hidden border border-slate-200 shadow-2xl">
             <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white/70">
@@ -415,12 +406,10 @@ Here's the updated version with the stable login/register form heights. I've mad
                 const registerPanel = document.getElementById('form-register');
                 const forgotPanel = document.getElementById('form-forgot');
 
-                // Hide all panels
                 loginPanel.classList.add('hidden');
                 registerPanel.classList.add('hidden');
                 forgotPanel.classList.add('hidden');
 
-                // Show requested panel
                 if (formType === 'register') registerPanel.classList.remove('hidden');
                 else if (formType === 'forgot') forgotPanel.classList.remove('hidden');
                 else loginPanel.classList.remove('hidden');
