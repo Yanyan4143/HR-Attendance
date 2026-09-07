@@ -1,0 +1,648 @@
+Here's the updated version with the stable login/register form heights. I've made the **Create Admin Account** and **Back to Login** transitions perfectly smooth with no height jumps:
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tikix HR Attendance — Executive Command Center (White)</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    colors: {
+                        tikix: {
+                            purple: '#3b0b59',
+                            purpleLight: '#52147a',
+                            purpleGlow: 'rgba(82, 20, 122, 0.15)',
+                            teal: '#0d9488',
+                            tealGlow: 'rgba(13, 148, 136, 0.15)',
+                            coral: '#e11d48',
+                            coralGlow: 'rgba(225, 29, 72, 0.12)',
+                            dark: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        *::-webkit-scrollbar { width: 5px; height: 5px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(82, 20, 122, 0.06) 0px, transparent 45%),
+                radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.06) 0px, transparent 40%),
+                radial-gradient(at 100% 100%, rgba(225, 29, 72, 0.04) 0px, transparent 50%);
+        }
+
+        .surface-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 15px 30px -12px rgba(0, 0, 0, 0.1);
+        }
+
+        .surface-card-hover { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .surface-card-hover:hover {
+            border-color: rgba(13, 148, 136, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 35px -12px rgba(13, 148, 136, 0.2);
+        }
+
+        .nav-item { position: relative; transition: all 0.2s ease; }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(82, 20, 122, 0.08) 0%, rgba(13, 148, 136, 0.08) 100%);
+            color: #0f172a;
+            border-left: 3px solid #0d9488;
+            font-weight: 600;
+        }
+        .nav-item:not(.active):hover { background: rgba(15, 23, 42, 0.03); color: #1e293b; }
+
+        .beacon-online { position: relative; }
+        .beacon-online::after {
+            content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+            border-radius: 50%; background-color: #0d9488;
+            animation: beaconPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes beaconPulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .modal-backdrop { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(8px); }
+        .date-input::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+        .logo-glow {
+            filter: drop-shadow(0 4px 8px rgba(13, 148, 136, 0.15));
+        }
+
+        /* FIXED HEIGHT AUTH CONTAINER - prevents any height shifting */
+        .auth-forms-container {
+            position: relative;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .auth-form-panel {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .auth-form-panel.hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="text-slate-700 antialiased h-screen overflow-hidden">
+
+    <!-- AUTH VIEW (white theme, stable height) -->
+    <div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#f8fafc] overflow-y-auto">
+        <div class="max-w-md w-full space-y-6 my-auto">
+            <div class="text-center space-y-3">
+                <div class="inline-flex p-3.5 rounded-2xl bg-white/80 border border-slate-200 backdrop-blur-md shadow-lg items-center justify-center logo-glow min-h-[64px]">
+                    <img id="auth-logo-img" src="../tikix.svg" alt="Tikix HR Logo" class="h-10 w-auto object-contain">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
+                        Gigi <span class="text-xs px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-semibold tracking-wider uppercase">HR Attendance</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 mt-1">Supervision & Timecard Intelligence Command Center</p>
+                </div>
+            </div>
+
+            <div class="surface-card rounded-2xl p-8 space-y-6">
+                <div id="auth-alert" class="hidden p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5">
+                    <i id="auth-alert-icon" class="fa-solid shrink-0"></i>
+                    <span id="auth-alert-message"></span>
+                </div>
+
+                <!-- FIXED HEIGHT AUTH FORMS CONTAINER -->
+                <div class="auth-forms-container">
+                    <!-- LOGIN FORM -->
+                    <div id="form-login" class="auth-form-panel space-y-4">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h2 class="text-base font-bold text-slate-800">HR Portal Access</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Enter administrator credentials to access dashboard</p>
+                        </div>
+                        <form id="loginForm" class="space-y-4">
+                            <div>
+                                <label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Email Address</label>
+                                <input type="email" id="login-email" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition" placeholder="admin@company.com">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <label class="text-[11px] uppercase tracking-wider text-slate-500 font-bold">Password</label>
+                                    <button type="button" onclick="showAuthSubForm('forgot')" class="text-xs text-teal-600 hover:underline font-medium">Forgot Password?</button>
+                                </div>
+                                <input type="password" id="login-password" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition" placeholder="••••••••••••">
+                            </div>
+                            <button type="submit" id="loginBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 flex items-center justify-center gap-2 border border-purple-800">
+                                <span>Sign In to Dashboard</span>
+                            </button>
+                        </form>
+                        <p class="text-center text-xs text-slate-500 pt-2">
+                            Need an admin account? 
+                            <button type="button" onclick="showAuthSubForm('register')" class="text-teal-600 hover:underline font-bold">Create Admin Account</button>
+                        </p>
+                    </div>
+
+                    <!-- REGISTER FORM -->
+                    <div id="form-register" class="auth-form-panel hidden space-y-4">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h2 class="text-base font-bold text-slate-800">Create Admin Account</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Register new Tikix HR Supervisor credentials</p>
+                        </div>
+                        <form id="registerForm" class="space-y-3">
+                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Full Name</label><input type="text" id="reg-fullname" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="John Doe"></div>
+                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Company / Organization</label><input type="text" id="reg-company" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="Acme Inc."></div>
+                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Admin Email</label><input type="email" id="reg-email" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="hr.admin@company.com"></div>
+                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Password</label><input type="password" id="reg-password" required minlength="6" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="••••••••••••"></div>
+                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 border border-purple-800">Register Administrator</button>
+                        </form>
+                        <p class="text-center text-xs text-slate-500 pt-1">Already have an account? <button type="button" onclick="showAuthSubForm('login')" class="text-teal-600 hover:underline font-bold">Back to Login</button></p>
+                    </div>
+
+                    <!-- FORGOT FORM -->
+                    <div id="form-forgot" class="auth-form-panel hidden space-y-4">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h2 class="text-base font-bold text-slate-800">Reset Password</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Recovery instructions will be sent to admin email</p>
+                        </div>
+                        <form id="forgotForm" class="space-y-4">
+                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Registered Admin Email</label><input type="email" id="forgot-email" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="admin@company.com"></div>
+                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 border border-purple-800">Send Reset Instructions</button>
+                        </form>
+                        <p class="text-center text-xs text-slate-500 pt-2">Remembered password? <button type="button" onclick="showAuthSubForm('login')" class="text-teal-600 hover:underline font-bold">Back to Login</button></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW (white theme) -->
+    <div id="dashboard-view" class="hidden h-screen w-full flex">
+        <aside class="w-72 bg-white/90 border-r border-slate-200 flex flex-col justify-between shrink-0 z-20 backdrop-blur-xl">
+            <div>
+                <div class="h-20 px-6 border-b border-slate-200 flex items-center justify-between">
+                    <div class="flex items-center gap-3 min-h-[32px]">
+                        <img id="sidebar-logo-img" src="../tikix.png" alt="Tikix Logo" class="h-8 w-auto object-contain logo-glow">
+                        <div>
+                            <p class="text-[10px] text-slate-500 font-medium">Attendance Command</p>
+                        </div>
+                    </div>
+                </div>
+                <nav class="p-4 space-y-1.5">
+                    <div class="px-3 pt-3 pb-2"><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Supervision Desk</span></div>
+                    <button onclick="switchTab('all')" id="nav-all" class="nav-item active w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-layer-group w-4 text-slate-400"></i><span>All Attendance</span></span>
+                        <span id="badge-all" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono">0</span>
+                    </button>
+                    <button onclick="switchTab('onduty')" id="nav-onduty" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-user-check w-4 text-teal-600"></i><span>On-Duty Personnel</span></span>
+                        <span id="badge-onduty" class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 text-[10px] font-mono">0</span>
+                    </button>
+                    <button onclick="switchTab('late')" id="nav-late" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-clock-rotate-left w-4 text-rose-600"></i><span>Late Arrivals</span></span>
+                        <span id="badge-late" class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-mono">0</span>
+                    </button>
+                    <button onclick="switchTab('overtime')" id="nav-overtime" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-bolt w-4 text-amber-500"></i><span>Overtime Roster</span></span>
+                        <span id="badge-overtime" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-mono">0</span>
+                    </button>
+                    <div class="px-3 pt-6 pb-2"><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Audit & Oversight</span></div>
+                    <button onclick="switchTab('voided')" id="nav-voided" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-shield-halved w-4 text-slate-400"></i><span>Voided Audit Trail</span></span>
+                        <span id="badge-voided" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-mono">0</span>
+                    </button>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-slate-200 bg-slate-50/70 space-y-2">
+                <button onclick="openManualModal()" class="w-full group flex items-center justify-center gap-2.5 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 py-2.5 px-4 text-xs font-bold transition">
+                    <i class="fa-solid fa-sliders text-teal-600 group-hover:text-white"></i><span>Manual Override</span>
+                </button>
+                <button onclick="logoutHR()" class="w-full flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 py-2.5 px-4 text-xs font-bold transition">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 min-w-0 flex flex-col overflow-hidden relative">
+            <header class="h-20 shrink-0 border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 flex items-center justify-between z-10">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-3">
+                        <h2 id="view-title" class="text-xl font-bold text-slate-900 tracking-tight truncate">All Employee Attendance</h2>
+                        <span class="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-teal-600 beacon-online"></span> Tikix Live Server Sync
+                        </span>
+                    </div>
+                    <p id="view-subtitle" class="text-xs text-slate-500 mt-1">Real-time attendance telemetry and supervisor analytics</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 font-medium shadow-sm">
+                        <i class="fa-regular fa-calendar text-teal-600"></i>
+                        <input type="date" id="date-picker" class="date-input bg-transparent focus:outline-none cursor-pointer">
+                    </div>
+                    <form id="usbForm" class="flex items-center">
+                        <input type="file" id="logfile" name="logfile" accept=".csv,.dat,.txt" required class="hidden">
+                        <button type="button" onclick="document.getElementById('logfile').click()" class="h-10 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-import text-slate-400"></i><span>Import USB</span>
+                        </button>
+                        <button type="submit" id="usbSubmitBtn" class="hidden">Submit</button>
+                    </form>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-8 space-y-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                    <div class="surface-card surface-card-hover rounded-2xl p-5">
+                        <div class="flex items-center justify-between text-slate-400 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider">Total Headcount</span><div class="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-users text-slate-500 text-xs"></i></div></div>
+                        <p id="stat-total" class="text-3xl font-extrabold text-slate-900 font-mono">0</p>
+                    </div>
+                    <div class="surface-card surface-card-hover rounded-2xl p-5">
+                        <div class="flex items-center justify-between text-teal-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Active On-Duty</span><div class="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center"><i class="fa-solid fa-user-check text-xs"></i></div></div>
+                        <p id="stat-active" class="text-3xl font-extrabold text-teal-700 font-mono">0</p>
+                    </div>
+                    <div class="surface-card surface-card-hover rounded-2xl p-5">
+                        <div class="flex items-center justify-between text-rose-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Late Arrivals</span><div class="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center"><i class="fa-solid fa-clock text-xs"></i></div></div>
+                        <p id="stat-late" class="text-3xl font-extrabold text-rose-600 font-mono">0</p>
+                    </div>
+                    <div class="surface-card surface-card-hover rounded-2xl p-5">
+                        <div class="flex items-center justify-between text-teal-700 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Punctuality</span><div class="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center"><i class="fa-solid fa-bullseye text-purple-700 text-xs"></i></div></div>
+                        <p id="stat-punctuality" class="text-3xl font-extrabold text-slate-800 font-mono">100%</p>
+                    </div>
+                    <div class="surface-card surface-card-hover rounded-2xl p-5">
+                        <div class="flex items-center justify-between text-amber-500 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Overtime Accum.</span><div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center"><i class="fa-solid fa-bolt text-xs"></i></div></div>
+                        <p id="stat-ot" class="text-3xl font-extrabold text-amber-600 font-mono">0 hrs</p>
+                    </div>
+                    <div class="surface-card surface-card-hover rounded-2xl p-5">
+                        <div class="flex items-center justify-between text-sky-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Avg Shift Hours</span><div class="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center"><i class="fa-solid fa-chart-simple text-xs"></i></div></div>
+                        <p id="stat-avg" class="text-3xl font-extrabold text-slate-700 font-mono">0 hrs</p>
+                    </div>
+                </div>
+
+                <section class="surface-card rounded-2xl overflow-hidden border border-slate-200">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white/60">
+                        <div class="flex items-center gap-2.5"><div class="w-2 h-2 rounded-full bg-teal-600"></div><h3 class="text-sm font-bold text-slate-800">Live Timecards Matrix</h3></div>
+                        <span class="text-[11px] text-slate-400 font-mono">Tikix Data Stream Protocol v2.4</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[1000px]">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                                    <th class="px-6 py-4">Employee ID</th><th class="px-4 py-4">Time In</th><th class="px-4 py-4">Time Out</th><th class="px-4 py-4">Break Used</th><th class="px-4 py-4">Net Worked</th><th class="px-4 py-4">Overtime</th><th class="px-4 py-4">Data Source</th><th class="px-6 py-4 text-right">Audit Options</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employee-table" class="divide-y divide-slate-100 text-xs">
+                                <tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl mb-3"></i><br>Syncing Tikix HR telemetry data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- MANUAL MODAL -->
+    <div id="manualModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
+        <div class="surface-card rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 shadow-2xl">
+            <div class="px-6 py-5 border-b border-slate-100 flex items-center gap-3.5 bg-white/70">
+                <div class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700"><i class="fa-solid fa-pen-to-square"></i></div>
+                <div><h3 class="text-sm font-bold text-slate-800">Manual Punch Override</h3><p class="text-xs text-slate-500 mt-0.5">Create an audited manual attendance record</p></div>
+            </div>
+            <form id="manualPunchForm" class="p-6 space-y-4">
+                <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Employee ID</label><input type="text" id="manualEmpId" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none font-mono" placeholder="EMP-1002"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Date</label><input type="date" id="manualDate" required class="date-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none"></div>
+                    <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Time</label><input type="time" id="manualTime" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none font-mono"></div>
+                </div>
+                <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Punch State</label>
+                    <select id="manualState" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none">
+                        <option value="Time-In">Time-In</option><option value="Break-Out">Break-Out</option><option value="Break-In">Break-In</option><option value="Overtime-In">Overtime-In</option><option value="Overtime-Out">Overtime-Out</option><option value="Time-Out">Time-Out</option>
+                    </select>
+                </div>
+                <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Override Reason</label><input type="text" id="manualReason" placeholder="e.g. Hardware connectivity drop" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none"></div>
+                <div class="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeManualModal()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-bold transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 border border-purple-800">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGS MODAL -->
+    <div id="logsModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
+        <div class="surface-card rounded-2xl max-w-2xl w-full overflow-hidden border border-slate-200 shadow-2xl">
+            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white/70">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600"><i class="fa-solid fa-list-check"></i></div>
+                    <div><h3 class="text-sm font-bold text-slate-800">Punch Audit & Inspection</h3><p class="text-xs text-slate-500 mt-0.5">Audit raw logs or execute soft voids</p></div>
+                </div>
+                <button onclick="closeLogsModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6">
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                                <th class="px-4 py-3">Timestamp</th><th class="px-4 py-3">Punch Type</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody" class="divide-y divide-slate-100 font-mono"></tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end pt-5"><button type="button" onclick="closeLogsModal()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-bold transition">Close Window</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let socket = null;
+            if (typeof io !== 'undefined') { socket = io(); }
+
+            const datePicker = document.getElementById('date-picker');
+            const authView = document.getElementById('auth-view');
+            const dashboardView = document.getElementById('dashboard-view');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const forgotForm = document.getElementById('forgotForm');
+            const authAlert = document.getElementById('auth-alert');
+            const alertIcon = document.getElementById('auth-alert-icon');
+            const alertMsg = document.getElementById('auth-alert-message');
+
+            let currentTab = 'all';
+            let rawDataCache = { employees: [], stats: {}, voidedLogs: [] };
+            let authToken = localStorage.getItem('hr_token');
+
+            if (authToken) { showDashboard(); } else { showAuth(); }
+
+            function showDashboard() {
+                authView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+                datePicker.value = new Date().toISOString().split('T')[0];
+                fetchDashboardData();
+            }
+
+            function showAuth() {
+                dashboardView.classList.add('hidden');
+                authView.classList.remove('hidden');
+                showAuthSubForm('login');
+            }
+
+            function showAuthSubForm(formType) {
+                hideAlert();
+                const loginPanel = document.getElementById('form-login');
+                const registerPanel = document.getElementById('form-register');
+                const forgotPanel = document.getElementById('form-forgot');
+
+                // Hide all panels
+                loginPanel.classList.add('hidden');
+                registerPanel.classList.add('hidden');
+                forgotPanel.classList.add('hidden');
+
+                // Show requested panel
+                if (formType === 'register') registerPanel.classList.remove('hidden');
+                else if (formType === 'forgot') forgotPanel.classList.remove('hidden');
+                else loginPanel.classList.remove('hidden');
+            }
+
+            function showAlert(msg, isSuccess = false) {
+                alertMsg.innerText = msg;
+                authAlert.className = isSuccess 
+                    ? "p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-teal-50 border border-teal-200 text-teal-700"
+                    : "p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-600";
+                alertIcon.className = isSuccess ? "fa-solid fa-circle-check shrink-0" : "fa-solid fa-circle-exclamation shrink-0";
+                authAlert.classList.remove('hidden');
+            }
+
+            function hideAlert() { authAlert.classList.add('hidden'); }
+
+            function logoutHR() {
+                localStorage.removeItem('hr_token');
+                localStorage.removeItem('hr_user');
+                authToken = null;
+                showAuth();
+            }
+
+            window.showAuthSubForm = showAuthSubForm;
+            window.logoutHR = logoutHR;
+            window.openManualModal = openManualModal;
+            window.closeManualModal = closeManualModal;
+            window.openLogsModal = openLogsModal;
+            window.closeLogsModal = closeLogsModal;
+            window.voidPunch = voidPunch;
+            window.switchTab = switchTab;
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); hideAlert();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                try {
+                    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+                    const data = await res.json();
+                    if (res.ok && data.token) { localStorage.setItem('hr_token', data.token); localStorage.setItem('hr_user', JSON.stringify(data.user)); authToken = data.token; showDashboard(); }
+                    else showAlert(data.error || 'Authentication failed.');
+                } catch (err) { showAlert('Server communication error.'); }
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); hideAlert();
+                const payload = { fullName: document.getElementById('reg-fullname').value, companyName: document.getElementById('reg-company').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value };
+                try {
+                    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const data = await res.json();
+                    if (res.ok) { showAlert(data.message || 'Registration successful', true); setTimeout(() => showAuthSubForm('login'), 1500); }
+                    else showAlert(data.error || 'Registration failed.');
+                } catch (err) { showAlert('Failed to connect to backend service.'); }
+            });
+
+            forgotForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); hideAlert();
+                const email = document.getElementById('forgot-email').value;
+                try {
+                    const res = await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+                    const data = await res.json();
+                    if (res.ok) showAlert(data.message || 'Recovery sent', true);
+                    else showAlert(data.error || 'Password recovery failed.');
+                } catch (err) { showAlert('Unable to request password reset.'); }
+            });
+
+            async function fetchDashboardData() {
+                if (!authToken) return;
+                try {
+                    const selectedDate = datePicker.value;
+                    const res = await fetch(`/api/hr-analytics?date=${selectedDate}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                    if (res.status === 401) return logoutHR();
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    rawDataCache = await res.json();
+                    updateSidebarBadges();
+                    renderCurrentTab();
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('employee-table').innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-exclamation text-rose-500 text-2xl mb-3"></i><br><span class="text-xs font-bold">Unable to load Tikix attendance telemetry</span></td></tr>`;
+                }
+            }
+
+            function updateSidebarBadges() {
+                const { stats = {}, voidedLogs = [] } = rawDataCache;
+                document.getElementById('badge-all').innerText = stats.totalHeadcount || 0;
+                document.getElementById('badge-onduty').innerText = stats.currentlyActive || 0;
+                document.getElementById('badge-late').innerText = stats.lateArrivals || 0;
+                document.getElementById('badge-overtime').innerText = stats.overtimeWorkers || 0;
+                document.getElementById('badge-voided').innerText = voidedLogs ? voidedLogs.length : 0;
+                document.getElementById('stat-total').innerText = stats.totalHeadcount || 0;
+                document.getElementById('stat-active').innerText = stats.currentlyActive || 0;
+                document.getElementById('stat-late').innerText = stats.lateArrivals || 0;
+                document.getElementById('stat-punctuality').innerText = `${stats.punctualityRate || 100}%`;
+                document.getElementById('stat-ot').innerText = `${stats.totalOTAccumulated || 0} hrs`;
+                document.getElementById('stat-avg').innerText = `${stats.averageWorkHours || 0} hrs`;
+            }
+
+            function switchTab(tabName) {
+                currentTab = tabName;
+                ['all', 'onduty', 'late', 'overtime', 'voided'].forEach(t => {
+                    const btn = document.getElementById(`nav-${t}`);
+                    if (btn) btn.classList.toggle('active', t === tabName);
+                });
+                renderCurrentTab();
+            }
+
+            function updateViewHeader(title, subtitle) {
+                document.getElementById('view-title').innerText = title;
+                document.getElementById('view-subtitle').innerText = subtitle;
+            }
+
+            function renderCurrentTab() {
+                const tbody = document.getElementById('employee-table');
+                tbody.innerHTML = '';
+                let filteredEmployees = [...(rawDataCache.employees || [])];
+
+                if (currentTab === 'onduty') { filteredEmployees = filteredEmployees.filter(e => e.status && e.status.toUpperCase() !== 'TIME-OUT'); updateViewHeader('On-Duty Personnel', 'Employees currently clocked in'); }
+                else if (currentTab === 'late') { filteredEmployees = filteredEmployees.filter(e => e.isLate); updateViewHeader('Late Arrival Exceptions', 'Attendance exceptions needing review'); }
+                else if (currentTab === 'overtime') { filteredEmployees = filteredEmployees.filter(e => parseFloat(e.overtimeHours) > 0); updateViewHeader('Overtime Roster', 'Staff accumulating extra hours'); }
+                else if (currentTab === 'voided') { updateViewHeader('Voided Audit Trail', 'Soft-deleted historical log entries'); renderVoidedTable(tbody); return; }
+                else { updateViewHeader('All Employee Attendance', 'Real-time attendance telemetry and supervisor analytics'); }
+
+                if (filteredEmployees.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-inbox text-xl mb-2 block text-slate-300"></i><span>No records matching this view filter.</span></td></tr>`;
+                    return;
+                }
+
+                filteredEmployees.forEach(emp => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition-colors';
+                    const isLate = !!emp.isLate;
+                    const isActive = emp.status && emp.status.toUpperCase() !== 'TIME-OUT';
+                    let sourceBadge = emp.isEdited ? `<span class="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-bold"><i class="fa-solid fa-pen text-[8px] mr-1"></i>Manual Override</span>` : `<span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-fingerprint text-[8px] mr-1"></i>Tikix Terminal</span>`;
+                    let statusBadge = isActive ? `<span class="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-bold flex items-center gap-1.5 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>ACTIVE</span>` : `<span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold flex items-center gap-1.5 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>OFF DUTY</span>`;
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center font-bold text-purple-700 font-mono">${(emp.userId || 'EM').substring(0, 2)}</div><div><div class="flex items-center gap-2"><span class="font-bold text-slate-800 font-mono">${emp.userId}</span>${isLate ? `<span class="px-1.5 py-0.2 rounded bg-rose-50 text-rose-600 text-[9px] font-bold border border-rose-200">LATE</span>` : ''}</div><div class="mt-1">${statusBadge}</div></div></div></td>
+                        <td class="px-4 py-4 font-mono text-slate-600">${emp.timeIn || '--'}</td>
+                        <td class="px-4 py-4 font-mono text-slate-500">${emp.timeOut || '--'}</td>
+                        <td class="px-4 py-4 font-mono text-slate-500">${emp.breakMinutes || 0} m</td>
+                        <td class="px-4 py-4 font-mono font-bold text-slate-800">${emp.netWorkHours || 0} h</td>
+                        <td class="px-4 py-4 font-mono font-bold ${parseFloat(emp.overtimeHours) > 0 ? 'text-amber-600' : 'text-slate-400'}">${emp.overtimeHours || 0} h</td>
+                        <td class="px-4 py-4">${sourceBadge}</td>
+                        <td class="px-6 py-4 text-right"><button onclick="openLogsModal('${emp.userId}')" class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-600 border border-teal-200 text-teal-700 hover:text-white text-xs font-bold transition">Inspect</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function renderVoidedTable(tbody) {
+                const voided = rawDataCache.voidedLogs || [];
+                if (voided.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-shield-check text-xl mb-2 block text-slate-300"></i><span>Audit log clear. No voided records found.</span></td></tr>`; return; }
+                voided.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition-colors';
+                    tr.innerHTML = `<td class="px-6 py-4 font-bold text-slate-700 font-mono">${log.user_id}</td><td class="px-4 py-4 font-mono text-slate-500" colspan="2">${new Date(log.timestamp).toLocaleTimeString()}</td><td class="px-4 py-4 font-bold text-rose-600">${log.state}</td><td class="px-4 py-4 italic text-slate-500" colspan="2">Reason: ${log.void_reason || 'Admin Voided'}</td><td class="px-4 py-4"><span class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">VOIDED</span></td><td class="px-6 py-4 text-right text-slate-300">--</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function openLogsModal(userId) {
+                const emp = (rawDataCache.employees || []).find(e => e.userId === userId);
+                if (!emp) return;
+                const tbody = document.getElementById('logsTableBody');
+                tbody.innerHTML = '';
+                (emp.rawLogs || []).forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50';
+                    tr.innerHTML = `<td class="px-4 py-3 text-slate-500">${new Date(log.timestamp).toLocaleTimeString()}</td><td class="px-4 py-3 font-bold text-slate-800">${log.state}</td><td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold">${log.status}</span></td><td class="px-4 py-3 text-right"><button onclick="voidPunch('${log.id}')" class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-600 border border-rose-200 text-rose-600 hover:text-white text-[10px] font-bold transition">Void Log</button></td>`;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('logsModal').classList.remove('hidden');
+            }
+
+            async function voidPunch(id) {
+                const reason = prompt("Enter mandatory audit reason for voiding this record:");
+                if (!reason) return;
+                try {
+                    const res = await fetch('/api/punch/void', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify({ id, reason }) });
+                    const result = await res.json();
+                    alert(result.message || 'Record voided successfully.');
+                    closeLogsModal();
+                    fetchDashboardData();
+                } catch (error) { alert('Unable to void punch record.'); }
+            }
+
+            function openManualModal() { document.getElementById('manualDate').value = datePicker.value; document.getElementById('manualModal').classList.remove('hidden'); }
+            function closeManualModal() { document.getElementById('manualModal').classList.add('hidden'); }
+            function closeLogsModal() { document.getElementById('logsModal').classList.add('hidden'); }
+
+            document.getElementById('logfile').addEventListener('change', () => { document.getElementById('usbSubmitBtn').click(); });
+            document.getElementById('usbForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                try {
+                    const res = await fetch('/api/upload-usb', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData });
+                    const result = await res.json();
+                    alert(result.message || 'File uploaded.');
+                    fetchDashboardData();
+                } catch (error) { alert('USB import failed.'); }
+            });
+
+            document.getElementById('manualPunchForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const payload = { userId: document.getElementById('manualEmpId').value, date: document.getElementById('manualDate').value, time: document.getElementById('manualTime').value, state: document.getElementById('manualState').value, reason: document.getElementById('manualReason').value };
+                try {
+                    const res = await fetch('/api/punch/manual', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify(payload) });
+                    const result = await res.json();
+                    alert(result.message || 'Manual override recorded.');
+                    closeManualModal();
+                    fetchDashboardData();
+                } catch (error) { alert('Unable to save manual override.'); }
+            });
+
+            datePicker.addEventListener('change', fetchDashboardData);
+            if (socket) socket.on('dataRefreshed', fetchDashboardData);
+
+            document.getElementById('manualModal').addEventListener('click', e => { if (e.target.id === 'manualModal') closeManualModal(); });
+            document.getElementById('logsModal').addEventListener('click', e => { if (e.target.id === 'logsModal') closeLogsModal(); });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeManualModal(); closeLogsModal(); } });
+        })();
+    </script>
+</body>
+</html>
+```
