@@ -26,8 +26,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Multer Config for USB Import File Uploads
-const upload = multer({ dest: 'uploads/' });
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware: Authenticate Request via Supabase Access Token
 async function authenticateToken(req, res, next) {
