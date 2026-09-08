@@ -1,644 +1,4170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tikix HR Attendance — Executive Command Center</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Tikix HR Attendance — Executive Command Center</title>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace']
-                    },
-                    colors: {
-                        tikix: {
-                            purple: '#3b0b59',
-                            purpleLight: '#52147a',
-                            purpleGlow: 'rgba(82, 20, 122, 0.15)',
-                            teal: '#0d9488',
-                            tealGlow: 'rgba(13, 148, 136, 0.15)',
-                            coral: '#e11d48',
-                            coralGlow: 'rgba(225, 29, 72, 0.12)',
-                            dark: '#0f172a'
-                        }
-                    }
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet">
+
+<script>
+tailwind.config = {
+    theme: {
+        extend: {
+            fontFamily: {
+                sans: ['Plus Jakarta Sans', 'sans-serif'],
+                mono: ['JetBrains Mono', 'monospace']
+            },
+            colors: {
+                tikix: {
+                    purple: '#3b0b59',
+                    purpleLight: '#52147a',
+                    teal: '#0d9488',
+                    coral: '#e11d48',
+                    dark: '#0f172a'
                 }
             }
         }
-    </script>
+    }
+}
+</script>
 
-    <style>
-        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
-        *::-webkit-scrollbar { width: 5px; height: 5px; }
-        *::-webkit-scrollbar-track { background: transparent; }
-        *::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+<style>
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f8fafc;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(82, 20, 122, 0.06) 0px, transparent 45%),
-                radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.06) 0px, transparent 40%),
-                radial-gradient(at 100% 100%, rgba(225, 29, 72, 0.04) 0px, transparent 50%);
-        }
+*::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
 
-        .surface-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 15px 30px -12px rgba(0, 0, 0, 0.1);
-        }
+*::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
 
-        .surface-card-hover { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-        .surface-card-hover:hover {
-            border-color: rgba(13, 148, 136, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 35px -12px rgba(13, 148, 136, 0.2);
-        }
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background:
+        radial-gradient(
+            circle at 0% 0%,
+            rgba(82,20,122,.07),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(13,148,136,.07),
+            transparent 35%
+        ),
+        #f8fafc;
+}
 
-        .nav-item { position: relative; transition: all 0.2s ease; }
-        .nav-item.active {
-            background: linear-gradient(90deg, rgba(82, 20, 122, 0.08) 0%, rgba(13, 148, 136, 0.08) 100%);
-            color: #0f172a;
-            border-left: 3px solid #0d9488;
-            font-weight: 600;
-        }
-        .nav-item:not(.active):hover { background: rgba(15, 23, 42, 0.03); color: #1e293b; }
+.surface-card {
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(15,23,42,.08);
+    box-shadow:
+        0 15px 35px -18px rgba(0,0,0,.18);
+}
 
-        .beacon-online { position: relative; }
-        .beacon-online::after {
-            content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0;
-            border-radius: 50%; background-color: #0d9488;
-            animation: beaconPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        @keyframes beaconPulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
+.nav-item {
+    transition: all .2s ease;
+}
 
-        .modal-backdrop { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(8px); }
-        .date-input::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+.nav-item.active {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(82,20,122,.09),
+            rgba(13,148,136,.09)
+        );
+    border-left: 3px solid #0d9488;
+    color: #0f172a;
+}
 
-        .logo-glow {
-            filter: drop-shadow(0 4px 8px rgba(13, 148, 136, 0.15));
-        }
+.nav-item:hover:not(.active) {
+    background: rgba(15,23,42,.035);
+}
 
-        .auth-forms-container {
-            position: relative;
-            min-height: 380px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .auth-form-panel {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .auth-form-panel.hidden {
-            display: none;
-        }
-    </style>
+.modal-backdrop {
+    background: rgba(15,23,42,.58);
+    backdrop-filter: blur(8px);
+}
+
+.logo-glow {
+    filter:
+        drop-shadow(
+            0 4px 10px
+            rgba(13,148,136,.16)
+        );
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+.metric-card {
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 20px 35px -18px
+        rgba(15,23,42,.22);
+}
+
+.page-fade {
+    animation: pageFade .25s ease;
+}
+
+@keyframes pageFade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.activity-line {
+    position: relative;
+}
+
+.activity-line::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 42px;
+    bottom: -20px;
+    width: 1px;
+    background: #e2e8f0;
+}
+
+.activity-line:last-child::before {
+    display: none;
+}
+</style>
 </head>
 
-<body class="text-slate-700 antialiased h-screen overflow-hidden">
+<body class="h-screen overflow-hidden text-slate-700">
 
-    <div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#f8fafc] overflow-y-auto">
-        <div class="max-w-md w-full space-y-6 my-auto">
-            <div class="text-center space-y-3">
-                <div class="inline-flex p-3.5 rounded-2xl bg-white/80 border border-slate-200 backdrop-blur-md shadow-lg items-center justify-center logo-glow min-h-[64px]">
-                    <picture>
-                    <source srcset="/tikix.svg" type="image/svg+xml">
-                    <img id="auth-logo-img" src="/tikix.png" alt="Tikix HR Logo" class="h-10 w-auto object-contain logo-glow"
-                         onerror="this.onerror=null; this.src='/tikix.svg';">
+<!-- =========================================================
+AUTH
+========================================================= -->
+
+<div id="auth-view"
+     class="fixed inset-0 z-50 flex items-center justify-center p-5 bg-[#f8fafc] overflow-y-auto">
+
+    <div class="w-full max-w-md">
+
+        <div class="text-center mb-6">
+
+            <div class="inline-flex p-4 rounded-2xl bg-white border border-slate-200 shadow-lg mb-4">
+
+                <picture>
+                    <source srcset="/tikix.svg"
+                            type="image/svg+xml">
+
+                    <img
+                        src="/tikix.png"
+                        alt="Tikix"
+                        class="h-10 w-auto object-contain logo-glow"
+                        onerror="this.onerror=null;this.src='/tikix.svg';">
                 </picture>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
-                        Tikix <span class="text-xs px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-semibold tracking-wider uppercase">HR Attendance</span>
-                    </h1>
-                    <p class="text-xs text-slate-500 mt-1">Supervision & Timecard Intelligence Command Center</p>
-                </div>
+
             </div>
 
-            <div class="surface-card rounded-2xl p-8 space-y-6">
-                <div id="auth-alert" class="hidden p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5">
-                    <i id="auth-alert-icon" class="fa-solid shrink-0"></i>
-                    <span id="auth-alert-message"></span>
+            <h1 class="text-2xl font-extrabold text-slate-900">
+                Tikix
+                <span class="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                    HR ATTENDANCE
+                </span>
+            </h1>
+
+            <p class="text-xs text-slate-500 mt-2">
+                Supervision & Timecard Intelligence Command Center
+            </p>
+
+        </div>
+
+        <div class="surface-card rounded-2xl p-7">
+
+            <div id="auth-alert"
+                 class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex gap-2">
+                <i id="auth-alert-icon"></i>
+                <span id="auth-alert-message"></span>
+            </div>
+
+            <!-- LOGIN -->
+
+            <div id="form-login">
+
+                <div class="border-b border-slate-100 pb-4 mb-5">
+                    <h2 class="font-bold text-slate-800">
+                        HR Portal Access
+                    </h2>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Enter administrator credentials.
+                    </p>
                 </div>
 
-                <div class="auth-forms-container">
-                    <div id="form-login" class="auth-form-panel space-y-4">
-                        <div class="border-b border-slate-100 pb-3">
-                            <h2 class="text-base font-bold text-slate-800">HR Portal Access</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Enter administrator credentials to access dashboard</p>
-                        </div>
-                        <form id="loginForm" class="space-y-4">
-                            <div>
-                                <label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Email Address</label>
-                                <input type="email" id="login-email" autocomplete="username" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition" placeholder="admin@company.com">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <label class="text-[11px] uppercase tracking-wider text-slate-500 font-bold">Password</label>
-                                    <button type="button" onclick="showAuthSubForm('forgot')" class="text-xs text-teal-600 hover:underline font-medium">Forgot Password?</button>
-                                </div>
-                                <input type="password" id="login-password" autocomplete="current-password" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition" placeholder="••••••••••••">
-                            </div>
-                            <button type="submit" id="loginBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 flex items-center justify-center gap-2 border border-purple-800">
-                                <span>Sign In to Dashboard</span>
+                <form id="loginForm"
+                      class="space-y-4">
+
+                    <div>
+                        <label class="label">
+                            Email Address
+                        </label>
+
+                        <input
+                            id="login-email"
+                            type="email"
+                            required
+                            autocomplete="username"
+                            class="input"
+                            placeholder="admin@company.com">
+                    </div>
+
+                    <div>
+
+                        <div class="flex justify-between mb-1.5">
+                            <label class="label mb-0">
+                                Password
+                            </label>
+
+                            <button
+                                type="button"
+                                onclick="showAuthSubForm('forgot')"
+                                class="text-xs text-teal-600 hover:underline">
+                                Forgot Password?
                             </button>
-                        </form>
-                        <p class="text-center text-xs text-slate-500 pt-2">
-                            Need an admin account? 
-                            <button type="button" onclick="showAuthSubForm('register')" class="text-teal-600 hover:underline font-bold">Create Admin Account</button>
+                        </div>
+
+                        <input
+                            id="login-password"
+                            type="password"
+                            required
+                            autocomplete="current-password"
+                            class="input"
+                            placeholder="••••••••••••">
+                    </div>
+
+                    <button
+                        id="loginBtn"
+                        type="submit"
+                        class="primary-btn w-full">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        Sign In to Dashboard
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-5 text-xs text-slate-500">
+                    Need an admin account?
+
+                    <button
+                        onclick="showAuthSubForm('register')"
+                        class="text-teal-600 font-bold hover:underline">
+                        Create Admin Account
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- REGISTER -->
+
+            <div id="form-register"
+                 class="hidden">
+
+                <div class="border-b border-slate-100 pb-4 mb-5">
+                    <h2 class="font-bold text-slate-800">
+                        Create Admin Account
+                    </h2>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Register Tikix HR supervisor credentials.
+                    </p>
+                </div>
+
+                <form id="registerForm"
+                      class="space-y-3">
+
+                    <input
+                        id="reg-fullname"
+                        required
+                        class="input"
+                        placeholder="Full Name">
+
+                    <input
+                        id="reg-company"
+                        required
+                        class="input"
+                        placeholder="Company / Organization">
+
+                    <input
+                        id="reg-email"
+                        type="email"
+                        required
+                        class="input"
+                        placeholder="Admin Email">
+
+                    <input
+                        id="reg-password"
+                        type="password"
+                        required
+                        minlength="6"
+                        class="input"
+                        placeholder="Password">
+
+                    <button class="primary-btn w-full">
+                        Register Administrator
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-5 text-xs">
+                    <button
+                        onclick="showAuthSubForm('login')"
+                        class="text-teal-600 font-bold">
+                        Back to Login
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- FORGOT -->
+
+            <div id="form-forgot"
+                 class="hidden">
+
+                <div class="border-b border-slate-100 pb-4 mb-5">
+                    <h2 class="font-bold text-slate-800">
+                        Reset Password
+                    </h2>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Password recovery instructions.
+                    </p>
+                </div>
+
+                <form id="forgotForm"
+                      class="space-y-4">
+
+                    <input
+                        id="forgot-email"
+                        type="email"
+                        required
+                        class="input"
+                        placeholder="Registered Admin Email">
+
+                    <button class="primary-btn w-full">
+                        Send Reset Instructions
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-5 text-xs">
+                    <button
+                        onclick="showAuthSubForm('login')"
+                        class="text-teal-600 font-bold">
+                        Back to Login
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================================================
+DASHBOARD
+========================================================= -->
+
+<div id="dashboard-view"
+     class="hidden h-screen w-full">
+
+    <!-- SIDEBAR -->
+
+    <aside class="w-72 h-screen bg-white/95 border-r border-slate-200 flex flex-col shrink-0">
+
+        <div class="h-20 px-6 border-b border-slate-200 flex items-center">
+
+            <picture>
+                <source srcset="/tikix.svg"
+                        type="image/svg+xml">
+
+                <img
+                    src="/tikix.png"
+                    alt="Tikix"
+                    class="h-8 w-auto object-contain logo-glow"
+                    onerror="this.onerror=null;this.src='/tikix.svg';">
+            </picture>
+
+            <div class="ml-3">
+                <p class="text-[10px] text-slate-500">
+                    Attendance Command
+                </p>
+
+                <p class="text-[9px] text-teal-600 font-bold uppercase tracking-widest">
+                    Live Operations
+                </p>
+            </div>
+
+        </div>
+
+        <nav class="flex-1 overflow-y-auto p-4">
+
+            <!-- SUPERVISION -->
+
+            <div class="px-3 pt-2 pb-2">
+                <span class="section-label">
+                    Supervision Desk
+                </span>
+            </div>
+
+            <button onclick="switchTab('all')"
+                    id="nav-all"
+                    class="nav-item active nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-layer-group text-slate-400"></i>
+                    All Attendance
+                </span>
+
+                <b id="badge-all"
+                   class="badge">
+                    0
+                </b>
+            </button>
+
+            <button onclick="switchTab('onduty')"
+                    id="nav-onduty"
+                    class="nav-item nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-user-check text-teal-600"></i>
+                    On-Duty Personnel
+                </span>
+
+                <b id="badge-onduty"
+                   class="badge teal">
+                    0
+                </b>
+            </button>
+
+            <button onclick="switchTab('late')"
+                    id="nav-late"
+                    class="nav-item nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-clock-rotate-left text-rose-600"></i>
+                    Late Arrivals
+                </span>
+
+                <b id="badge-late"
+                   class="badge rose">
+                    0
+                </b>
+            </button>
+
+            <button onclick="switchTab('overtime')"
+                    id="nav-overtime"
+                    class="nav-item nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-bolt text-amber-500"></i>
+                    Overtime Roster
+                </span>
+
+                <b id="badge-overtime"
+                   class="badge amber">
+                    0
+                </b>
+            </button>
+
+            <!-- HISTORY -->
+
+            <div class="px-3 pt-7 pb-2">
+                <span class="section-label">
+                    History & Audit
+                </span>
+            </div>
+
+            <button onclick="switchTab('history')"
+                    id="nav-history"
+                    class="nav-item nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-clock-rotate-left text-purple-600"></i>
+                    Attendance History
+                </span>
+
+                <b id="badge-history"
+                   class="badge purple">
+                    30D
+                </b>
+            </button>
+
+            <button onclick="switchTab('voided')"
+                    id="nav-voided"
+                    class="nav-item nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-shield-halved text-slate-500"></i>
+                    Voided Audit Trail
+                </span>
+
+                <b id="badge-voided"
+                   class="badge">
+                    0
+                </b>
+            </button>
+
+            <button onclick="switchTab('activity')"
+                    id="nav-activity"
+                    class="nav-item nav-btn">
+
+                <span>
+                    <i class="fa-solid fa-list-check text-sky-600"></i>
+                    System Activity
+                </span>
+
+                <b id="badge-activity"
+                   class="badge sky">
+                    0
+                </b>
+            </button>
+
+        </nav>
+
+        <!-- ADMIN -->
+
+        <div class="p-4 border-t border-slate-200 bg-slate-50">
+
+            <button
+                onclick="openManualModal()"
+                class="w-full py-3 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white font-bold text-xs transition mb-2">
+
+                <i class="fa-solid fa-pen-to-square mr-2"></i>
+                Manual Override
+
+            </button>
+
+            <button
+                onclick="logoutHR()"
+                class="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-rose-50 hover:text-rose-600 font-bold text-xs transition">
+
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>
+                Sign Out
+
+            </button>
+
+        </div>
+
+    </aside>
+
+    <!-- MAIN -->
+
+    <main class="flex-1 min-w-0 h-screen flex flex-col">
+
+        <!-- HEADER -->
+
+        <header class="h-20 shrink-0 bg-white/85 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between">
+
+            <div>
+
+                <div class="flex items-center gap-3">
+
+                    <h2 id="view-title"
+                        class="text-xl font-extrabold text-slate-900">
+                        All Employee Attendance
+                    </h2>
+
+                    <span class="px-2 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-[9px] font-bold uppercase">
+                        ● Live
+                    </span>
+
+                </div>
+
+                <p id="view-subtitle"
+                   class="text-xs text-slate-500 mt-1">
+                    Complete daily attendance command view.
+                </p>
+
+            </div>
+
+            <div class="flex items-center gap-3">
+
+                <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 h-10">
+
+                    <i class="fa-regular fa-calendar text-teal-600"></i>
+
+                    <input
+                        id="date-picker"
+                        type="date"
+                        class="text-xs outline-none bg-transparent">
+
+                </div>
+
+                <form id="usbForm">
+
+                    <input
+                        type="file"
+                        id="logfile"
+                        name="logfile"
+                        accept=".csv,.dat,.txt"
+                        class="hidden">
+
+                    <button
+                        type="button"
+                        onclick="document.getElementById('logfile').click()"
+                        class="h-10 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold">
+
+                        <i class="fa-solid fa-file-import mr-2 text-slate-400"></i>
+                        Import USB
+
+                    </button>
+
+                    <button
+                        id="usbSubmitBtn"
+                        type="submit"
+                        class="hidden">
+                    </button>
+
+                </form>
+
+            </div>
+
+        </header>
+
+        <!-- CONTENT -->
+
+        <div id="page-content"
+             class="flex-1 overflow-y-auto p-8">
+
+        </div>
+
+    </main>
+
+</div>
+
+<!-- =========================================================
+MANUAL MODAL
+========================================================= -->
+
+<div id="manualModal"
+     class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-5">
+
+    <div class="surface-card rounded-2xl max-w-md w-full">
+
+        <div class="p-6 border-b border-slate-100">
+
+            <h3 class="font-bold text-slate-800">
+                Manual Punch Override
+            </h3>
+
+            <p class="text-xs text-slate-500 mt-1">
+                This action will be permanently audited.
+            </p>
+
+        </div>
+
+        <form id="manualPunchForm"
+              class="p-6 space-y-4">
+
+            <div>
+                <label class="label">
+                    Employee ID
+                </label>
+
+                <input
+                    id="manualEmpId"
+                    required
+                    class="input font-mono"
+                    placeholder="EMP-1002">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+
+                <div>
+                    <label class="label">
+                        Date
+                    </label>
+
+                    <input
+                        id="manualDate"
+                        type="date"
+                        required
+                        class="input">
+                </div>
+
+                <div>
+                    <label class="label">
+                        Time
+                    </label>
+
+                    <input
+                        id="manualTime"
+                        type="time"
+                        required
+                        class="input">
+                </div>
+
+            </div>
+
+            <div>
+                <label class="label">
+                    Punch State
+                </label>
+
+                <select
+                    id="manualState"
+                    class="input">
+
+                    <option>Time-In</option>
+                    <option>Break-Out</option>
+                    <option>Break-In</option>
+                    <option>Overtime-In</option>
+                    <option>Overtime-Out</option>
+                    <option>Time-Out</option>
+
+                </select>
+
+            </div>
+
+            <div>
+                <label class="label">
+                    Override Reason
+                </label>
+
+                <textarea
+                    id="manualReason"
+                    required
+                    rows="3"
+                    class="input"
+                    placeholder="Why does this record need to be manually created?"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2">
+
+                <button
+                    type="button"
+                    onclick="closeManualModal()"
+                    class="secondary-btn">
+                    Cancel
+                </button>
+
+                <button
+                    class="primary-btn">
+                    Save Audited Record
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- =========================================================
+LOG MODAL
+========================================================= -->
+
+<div id="logsModal"
+     class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-5">
+
+    <div class="surface-card rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden">
+
+        <div class="p-6 border-b border-slate-100 flex justify-between">
+
+            <div>
+                <h3 class="font-bold text-slate-800">
+                    Punch Audit & Inspection
+                </h3>
+
+                <p id="logsModalEmployee"
+                   class="text-xs text-slate-500 mt-1">
+                </p>
+            </div>
+
+            <button
+                onclick="closeLogsModal()"
+                class="w-8 h-8 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+        </div>
+
+        <div class="p-6 overflow-y-auto">
+
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+
+                <table class="w-full text-xs">
+
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 text-left">
+                                Timestamp
+                            </th>
+
+                            <th class="p-3 text-left">
+                                Punch
+                            </th>
+
+                            <th class="p-3 text-left">
+                                Source
+                            </th>
+
+                            <th class="p-3 text-left">
+                                Status
+                            </th>
+
+                            <th class="p-3 text-right">
+                                Action
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="logsTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+/* =========================================================
+UTILITY CSS CLASSES
+========================================================= */
+
+const style = document.createElement('style');
+
+style.innerHTML = `
+.label {
+    display:block;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:700;
+    color:#64748b;
+    margin-bottom:6px;
+}
+
+.input {
+    width:100%;
+    background:white;
+    border:1px solid #e2e8f0;
+    border-radius:11px;
+    padding:10px 13px;
+    font-size:12px;
+    color:#0f172a;
+    outline:none;
+}
+
+.input:focus {
+    border-color:#0d9488;
+    box-shadow:0 0 0 2px rgba(13,148,136,.08);
+}
+
+.primary-btn {
+    background:linear-gradient(90deg,#52147a,#3b0b59);
+    color:white;
+    border-radius:11px;
+    padding:11px 15px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid #3b0b59;
+    transition:.2s;
+}
+
+.primary-btn:hover {
+    transform:translateY(-1px);
+    box-shadow:0 8px 18px rgba(59,11,89,.2);
+}
+
+.secondary-btn {
+    background:white;
+    border:1px solid #e2e8f0;
+    color:#475569;
+    border-radius:11px;
+    padding:11px 15px;
+    font-size:12px;
+    font-weight:700;
+}
+
+.nav-btn {
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:11px 13px;
+    border-radius:11px;
+    font-size:11px;
+    font-weight:600;
+    color:#64748b;
+    margin-bottom:4px;
+    text-align:left;
+}
+
+.nav-btn > span {
+    display:flex;
+    align-items:center;
+    gap:11px;
+}
+
+.nav-btn i {
+    width:16px;
+}
+
+.section-label {
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:.15em;
+    color:#94a3b8;
+    font-weight:800;
+}
+
+.badge {
+    font-family:'JetBrains Mono';
+    font-size:9px;
+    padding:3px 7px;
+    border-radius:999px;
+    background:#f1f5f9;
+    color:#64748b;
+}
+
+.badge.teal {
+    background:#ecfdf5;
+    color:#047857;
+}
+
+.badge.rose {
+    background:#fff1f2;
+    color:#e11d48;
+}
+
+.badge.amber {
+    background:#fffbeb;
+    color:#d97706;
+}
+
+.badge.purple {
+    background:#faf5ff;
+    color:#7e22ce;
+}
+
+.badge.sky {
+    background:#f0f9ff;
+    color:#0284c7;
+}
+
+.metric {
+    background:white;
+    border:1px solid #e2e8f0;
+    border-radius:16px;
+    padding:18px;
+}
+
+.table-row:hover {
+    background:#f8fafc;
+}
+`;
+
+document.head.appendChild(style);
+
+
+/* =========================================================
+STATE
+========================================================= */
+
+let socket =
+    typeof io !== 'undefined'
+        ? io()
+        : null;
+
+let currentTab = 'all';
+
+let authToken =
+    localStorage.getItem(
+        'hr_token'
+    );
+
+let rawDataCache = {
+    employees: [],
+    stats: {},
+    voidedLogs: [],
+    activity: []
+};
+
+const datePicker =
+    document.getElementById(
+        'date-picker'
+    );
+
+
+/* =========================================================
+INITIALIZATION
+========================================================= */
+
+if (authToken) {
+    showDashboard();
+} else {
+    showAuth();
+}
+
+
+/* =========================================================
+AUTH
+========================================================= */
+
+function showAuth() {
+
+    document
+        .getElementById('dashboard-view')
+        .classList.add('hidden');
+
+    document
+        .getElementById('auth-view')
+        .classList.remove('hidden');
+
+    showAuthSubForm(
+        'login'
+    );
+}
+
+function showDashboard() {
+
+    document
+        .getElementById('auth-view')
+        .classList.add('hidden');
+
+    document
+        .getElementById('dashboard-view')
+        .classList.remove('hidden');
+
+    datePicker.value =
+        new Date()
+            .toISOString()
+            .split('T')[0];
+
+    fetchDashboardData();
+}
+
+function showAuthSubForm(type) {
+
+    [
+        'login',
+        'register',
+        'forgot'
+    ].forEach(name => {
+
+        document
+            .getElementById(
+                `form-${name}`
+            )
+            .classList.toggle(
+                'hidden',
+                name !== type
+            );
+
+    });
+
+    hideAlert();
+}
+
+function showAlert(
+    message,
+    success = false
+) {
+
+    const box =
+        document.getElementById(
+            'auth-alert'
+        );
+
+    const icon =
+        document.getElementById(
+            'auth-alert-icon'
+        );
+
+    document.getElementById(
+        'auth-alert-message'
+    ).textContent = message;
+
+    box.className =
+        success
+            ? 'mb-5 p-3.5 rounded-xl text-xs font-semibold flex gap-2 bg-teal-50 border border-teal-200 text-teal-700'
+            : 'mb-5 p-3.5 rounded-xl text-xs font-semibold flex gap-2 bg-rose-50 border border-rose-200 text-rose-600';
+
+    icon.className =
+        success
+            ? 'fa-solid fa-circle-check'
+            : 'fa-solid fa-circle-exclamation';
+
+    box.classList.remove(
+        'hidden'
+    );
+}
+
+function hideAlert() {
+
+    document
+        .getElementById(
+            'auth-alert'
+        )
+        .classList.add(
+            'hidden'
+        );
+}
+
+
+/* =========================================================
+LOGIN
+========================================================= */
+
+document
+    .getElementById(
+        'loginForm'
+    )
+    .addEventListener(
+        'submit',
+        async e => {
+
+            e.preventDefault();
+
+            const email =
+                document.getElementById(
+                    'login-email'
+                ).value;
+
+            const password =
+                document.getElementById(
+                    'login-password'
+                ).value;
+
+            try {
+
+                const res =
+                    await fetch(
+                        '/api/auth/login',
+                        {
+                            method:'POST',
+                            headers:{
+                                'Content-Type':
+                                    'application/json'
+                            },
+                            body:
+                                JSON.stringify({
+                                    email,
+                                    password
+                                })
+                        }
+                    );
+
+                const data =
+                    await res.json();
+
+                if (
+                    res.ok &&
+                    data.token
+                ) {
+
+                    localStorage.setItem(
+                        'hr_token',
+                        data.token
+                    );
+
+                    localStorage.setItem(
+                        'hr_user',
+                        JSON.stringify(
+                            data.user
+                        )
+                    );
+
+                    authToken =
+                        data.token;
+
+                    showDashboard();
+
+                } else {
+
+                    showAlert(
+                        data.error ||
+                        'Authentication failed.'
+                    );
+
+                }
+
+            } catch {
+
+                showAlert(
+                    'Unable to connect to the HR server.'
+                );
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+REGISTER
+========================================================= */
+
+document
+    .getElementById(
+        'registerForm'
+    )
+    .addEventListener(
+        'submit',
+        async e => {
+
+            e.preventDefault();
+
+            const payload = {
+                fullName:
+                    document.getElementById(
+                        'reg-fullname'
+                    ).value,
+
+                companyName:
+                    document.getElementById(
+                        'reg-company'
+                    ).value,
+
+                email:
+                    document.getElementById(
+                        'reg-email'
+                    ).value,
+
+                password:
+                    document.getElementById(
+                        'reg-password'
+                    ).value
+            };
+
+            try {
+
+                const res =
+                    await fetch(
+                        '/api/auth/register',
+                        {
+                            method:'POST',
+                            headers:{
+                                'Content-Type':
+                                    'application/json'
+                            },
+                            body:
+                                JSON.stringify(
+                                    payload
+                                )
+                        }
+                    );
+
+                const data =
+                    await res.json();
+
+                if (res.ok) {
+
+                    showAlert(
+                        data.message,
+                        true
+                    );
+
+                    setTimeout(
+                        () =>
+                            showAuthSubForm(
+                                'login'
+                            ),
+                        1200
+                    );
+
+                } else {
+
+                    showAlert(
+                        data.error ||
+                        'Registration failed.'
+                    );
+
+                }
+
+            } catch {
+
+                showAlert(
+                    'Registration service unavailable.'
+                );
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+FORGOT PASSWORD
+========================================================= */
+
+document
+    .getElementById(
+        'forgotForm'
+    )
+    .addEventListener(
+        'submit',
+        async e => {
+
+            e.preventDefault();
+
+            const email =
+                document.getElementById(
+                    'forgot-email'
+                ).value;
+
+            try {
+
+                const res =
+                    await fetch(
+                        '/api/auth/forgot-password',
+                        {
+                            method:'POST',
+                            headers:{
+                                'Content-Type':
+                                    'application/json'
+                            },
+                            body:
+                                JSON.stringify({
+                                    email
+                                })
+                        }
+                    );
+
+                const data =
+                    await res.json();
+
+                if (res.ok) {
+
+                    showAlert(
+                        data.message,
+                        true
+                    );
+
+                } else {
+
+                    showAlert(
+                        data.error ||
+                        'Password reset failed.'
+                    );
+
+                }
+
+            } catch {
+
+                showAlert(
+                    'Password reset service unavailable.'
+                );
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+LOGOUT
+========================================================= */
+
+async function logoutHR() {
+
+    try {
+
+        if (authToken) {
+
+            await fetch(
+                '/api/auth/logout',
+                {
+                    method:'POST',
+                    headers:{
+                        Authorization:
+                            `Bearer ${authToken}`
+                    }
+                }
+            );
+
+        }
+
+    } catch {}
+
+    localStorage.removeItem(
+        'hr_token'
+    );
+
+    localStorage.removeItem(
+        'hr_user'
+    );
+
+    authToken = null;
+
+    showAuth();
+}
+
+
+/* =========================================================
+DATA
+========================================================= */
+
+async function fetchDashboardData() {
+
+    if (!authToken) return;
+
+    try {
+
+        const date =
+            datePicker.value;
+
+        const res =
+            await fetch(
+                `/api/hr-analytics?date=${encodeURIComponent(date)}`,
+                {
+                    headers:{
+                        Authorization:
+                            `Bearer ${authToken}`
+                    }
+                }
+            );
+
+        if (
+            res.status === 401
+        ) {
+            return logoutHR();
+        }
+
+        if (!res.ok) {
+            throw new Error(
+                `HTTP ${res.status}`
+            );
+        }
+
+        rawDataCache =
+            await res.json();
+
+        updateBadges();
+
+        renderCurrentTab();
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+        document
+            .getElementById(
+                'page-content'
+            )
+            .innerHTML = `
+                <div class="surface-card rounded-2xl p-16 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-4"></i>
+                    <h3 class="font-bold text-slate-800">
+                        Unable to load attendance telemetry
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-2">
+                        Check the backend connection and Supabase configuration.
+                    </p>
+                </div>
+            `;
+
+    }
+}
+
+
+/* =========================================================
+BADGES
+========================================================= */
+
+function updateBadges() {
+
+    const stats =
+        rawDataCache.stats || {};
+
+    const voided =
+        rawDataCache.voidedLogs || [];
+
+    const activity =
+        rawDataCache.activity || [];
+
+    document.getElementById(
+        'badge-all'
+    ).textContent =
+        stats.totalHeadcount || 0;
+
+    document.getElementById(
+        'badge-onduty'
+    ).textContent =
+        stats.currentlyActive || 0;
+
+    document.getElementById(
+        'badge-late'
+    ).textContent =
+        stats.lateArrivals || 0;
+
+    document.getElementById(
+        'badge-overtime'
+    ).textContent =
+        stats.overtimeWorkers || 0;
+
+    document.getElementById(
+        'badge-voided'
+    ).textContent =
+        voided.length;
+
+    document.getElementById(
+        'badge-activity'
+    ).textContent =
+        activity.length;
+}
+
+
+/* =========================================================
+TAB SWITCHING
+========================================================= */
+
+function switchTab(tab) {
+
+    currentTab = tab;
+
+    [
+        'all',
+        'onduty',
+        'late',
+        'overtime',
+        'history',
+        'voided',
+        'activity'
+    ].forEach(
+        name => {
+
+            const btn =
+                document.getElementById(
+                    `nav-${name}`
+                );
+
+            if (btn) {
+
+                btn.classList.toggle(
+                    'active',
+                    name === tab
+                );
+
+            }
+
+        }
+    );
+
+    renderCurrentTab();
+}
+
+
+/* =========================================================
+HEADER
+========================================================= */
+
+function updateHeader(
+    title,
+    subtitle
+) {
+
+    document.getElementById(
+        'view-title'
+    ).textContent = title;
+
+    document.getElementById(
+        'view-subtitle'
+    ).textContent =
+        subtitle;
+}
+
+
+/* =========================================================
+CURRENT TAB
+========================================================= */
+
+function renderCurrentTab() {
+
+    switch (
+        currentTab
+    ) {
+
+        case 'all':
+            renderAll();
+            break;
+
+        case 'onduty':
+            renderOnDuty();
+            break;
+
+        case 'late':
+            renderLate();
+            break;
+
+        case 'overtime':
+            renderOvertime();
+            break;
+
+        case 'history':
+            renderHistory();
+            break;
+
+        case 'voided':
+            renderVoided();
+            break;
+
+        case 'activity':
+            renderActivity();
+            break;
+
+        default:
+            renderAll();
+
+    }
+}
+
+
+/* =========================================================
+METRIC
+========================================================= */
+
+function metric(
+    label,
+    value,
+    icon,
+    color = 'slate'
+) {
+
+    const colors = {
+        slate:
+            'bg-slate-50 text-slate-600',
+        teal:
+            'bg-teal-50 text-teal-600',
+        rose:
+            'bg-rose-50 text-rose-600',
+        amber:
+            'bg-amber-50 text-amber-600',
+        purple:
+            'bg-purple-50 text-purple-700',
+        sky:
+            'bg-sky-50 text-sky-600'
+    };
+
+    return `
+        <div class="metric-card metric">
+
+            <div class="flex justify-between items-center mb-3">
+
+                <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                    ${label}
+                </span>
+
+                <div class="w-8 h-8 rounded-lg ${colors[color]} flex items-center justify-center">
+                    <i class="fa-solid ${icon} text-xs"></i>
+                </div>
+
+            </div>
+
+            <div class="text-2xl font-extrabold text-slate-900 font-mono">
+                ${value}
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+ALL ATTENDANCE
+========================================================= */
+
+function renderAll() {
+
+    const stats =
+        rawDataCache.stats || {};
+
+    const employees =
+        rawDataCache.employees || [];
+
+    updateHeader(
+        'All Employee Attendance',
+        'Complete daily attendance telemetry and timecard supervision.'
+    );
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+
+                ${metric(
+                    'Employees Recorded',
+                    stats.totalHeadcount || 0,
+                    'fa-users',
+                    'slate'
+                )}
+
+                ${metric(
+                    'Currently On Duty',
+                    stats.currentlyActive || 0,
+                    'fa-user-check',
+                    'teal'
+                )}
+
+                ${metric(
+                    'Late Arrivals',
+                    stats.lateArrivals || 0,
+                    'fa-clock',
+                    'rose'
+                )}
+
+                ${metric(
+                    'Punctuality',
+                    `${stats.punctualityRate || 100}%`,
+                    'fa-bullseye',
+                    'purple'
+                )}
+
+                ${metric(
+                    'Total Overtime',
+                    `${stats.totalOTAccumulated || 0}h`,
+                    'fa-bolt',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Avg Shift',
+                    `${stats.averageWorkHours || 0}h`,
+                    'fa-chart-simple',
+                    'sky'
+                )}
+
+            </div>
+
+            ${employeeTable(
+                employees,
+                'all'
+            )}
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+ON DUTY
+========================================================= */
+
+function renderOnDuty() {
+
+    const employees =
+        (rawDataCache.employees || [])
+            .filter(
+                e => e.isActive
+            );
+
+    const onBreak =
+        employees.filter(
+            e =>
+                e.currentState ===
+                'ON BREAK'
+        ).length;
+
+    const activeOT =
+        employees.filter(
+            e =>
+                Number(
+                    e.overtimeHours
+                ) > 0
+        ).length;
+
+    updateHeader(
+        'On-Duty Personnel',
+        'Live operational view of employees currently inside their shift.'
+    );
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                ${metric(
+                    'Active Personnel',
+                    employees.length,
+                    'fa-user-check',
+                    'teal'
+                )}
+
+                ${metric(
+                    'Currently On Break',
+                    onBreak,
+                    'fa-mug-hot',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Active Overtime',
+                    activeOT,
+                    'fa-bolt',
+                    'purple'
+                )}
+
+                ${metric(
+                    'Live Monitoring',
+                    'ON',
+                    'fa-satellite-dish',
+                    'sky'
+                )}
+
+            </div>
+
+            <div class="surface-card rounded-2xl overflow-hidden">
+
+                <div class="p-5 border-b border-slate-100">
+
+                    <h3 class="font-bold text-slate-800">
+                        Current Personnel Status
+                    </h3>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Last punch activity, current state and live work duration.
+                    </p>
+
+                </div>
+
+                ${onDutyTable(employees)}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+LATE ARRIVALS
+========================================================= */
+
+function renderLate() {
+
+    const employees =
+        (rawDataCache.employees || [])
+            .filter(
+                e => e.isLate
+            );
+
+    const totalLate =
+        employees.length;
+
+    const averageDelay =
+        totalLate
+            ? Math.round(
+                employees.reduce(
+                    (sum, e) =>
+                        sum +
+                        Number(
+                            e.minutesLate ||
+                            0
+                        ),
+                    0
+                ) /
+                totalLate
+            )
+            : 0;
+
+    const longestDelay =
+        totalLate
+            ? Math.max(
+                ...employees.map(
+                    e =>
+                        Number(
+                            e.minutesLate ||
+                            0
+                        )
+                )
+            )
+            : 0;
+
+    updateHeader(
+        'Late Arrival Exceptions',
+        'Attendance exceptions requiring supervisor visibility and historical review.'
+    );
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                ${metric(
+                    'Late Employees',
+                    totalLate,
+                    'fa-clock',
+                    'rose'
+                )}
+
+                ${metric(
+                    'Average Delay',
+                    `${averageDelay}m`,
+                    'fa-hourglass-half',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Longest Delay',
+                    `${longestDelay}m`,
+                    'fa-triangle-exclamation',
+                    'rose'
+                )}
+
+                ${metric(
+                    'Scheduled Start',
+                    '09:00',
+                    'fa-calendar-check',
+                    'purple'
+                )}
+
+            </div>
+
+            <div class="surface-card rounded-2xl overflow-hidden">
+
+                <div class="p-5 border-b border-slate-100">
+
+                    <h3 class="font-bold text-slate-800">
+                        Today's Late Arrival Exceptions
+                    </h3>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Scheduled 09:00 start compared with actual first Time-In.
+                    </p>
+
+                </div>
+
+                ${lateTable(employees)}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+OVERTIME
+========================================================= */
+
+function renderOvertime() {
+
+    const employees =
+        (rawDataCache.employees || [])
+            .filter(
+                e =>
+                    Number(
+                        e.overtimeHours
+                    ) > 0
+            );
+
+    const total =
+        employees.reduce(
+            (sum, e) =>
+                sum +
+                Number(
+                    e.overtimeHours
+                ),
+            0
+        );
+
+    const active =
+        employees.filter(
+            e => e.isActive
+        ).length;
+
+    const overTwo =
+        employees.filter(
+            e =>
+                Number(
+                    e.overtimeHours
+                ) >= 2
+        ).length;
+
+    updateHeader(
+        'Overtime Roster',
+        'Monitor regular hours, accumulated overtime and active overtime personnel.'
+    );
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                ${metric(
+                    'OT Personnel',
+                    employees.length,
+                    'fa-users',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Total Overtime',
+                    `${Math.round(total * 100) / 100}h`,
+                    'fa-bolt',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Active OT',
+                    active,
+                    'fa-person-running',
+                    'teal'
+                )}
+
+                ${metric(
+                    '2+ Hour OT',
+                    overTwo,
+                    'fa-fire',
+                    'rose'
+                )}
+
+            </div>
+
+            <div class="surface-card rounded-2xl overflow-hidden">
+
+                <div class="p-5 border-b border-slate-100">
+
+                    <h3 class="font-bold text-slate-800">
+                        Overtime Monitoring
+                    </h3>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Eight-hour regular threshold with live overtime accumulation.
+                    </p>
+
+                </div>
+
+                ${overtimeTable(employees)}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+EMPLOYEE TABLE
+========================================================= */
+
+function employeeTable(
+    employees
+) {
+
+    if (!employees.length) {
+
+        return `
+            <div class="surface-card rounded-2xl p-16 text-center">
+
+                <i class="fa-solid fa-inbox text-slate-300 text-3xl mb-4"></i>
+
+                <h3 class="font-bold text-slate-700">
+                    No attendance records
+                </h3>
+
+                <p class="text-xs text-slate-400 mt-1">
+                    No employee punch records exist for this date.
+                </p>
+
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="surface-card rounded-2xl overflow-hidden">
+
+            <div class="p-5 border-b border-slate-100 flex justify-between">
+
+                <div>
+                    <h3 class="font-bold text-slate-800">
+                        Daily Timecard Matrix
+                    </h3>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        ${employees.length} employee record${employees.length === 1 ? '' : 's'}
+                    </p>
+                </div>
+
+                <span class="text-[9px] font-mono text-slate-400">
+                    TIKIX DATA STREAM v2.4
+                </span>
+
+            </div>
+
+            <div class="overflow-x-auto">
+
+                <table class="w-full min-w-[1100px] text-left">
+
+                    <thead class="bg-slate-50 border-b border-slate-200">
+
+                        <tr class="text-[9px] uppercase tracking-wider text-slate-500">
+
+                            <th class="p-4">
+                                Employee
+                            </th>
+
+                            <th class="p-4">
+                                State
+                            </th>
+
+                            <th class="p-4">
+                                Time In
+                            </th>
+
+                            <th class="p-4">
+                                Time Out
+                            </th>
+
+                            <th class="p-4">
+                                Break
+                            </th>
+
+                            <th class="p-4">
+                                Net Worked
+                            </th>
+
+                            <th class="p-4">
+                                OT
+                            </th>
+
+                            <th class="p-4">
+                                Source
+                            </th>
+
+                            <th class="p-4 text-right">
+                                Audit
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-100">
+
+                        ${employees.map(
+                            employeeRow
+                        ).join('')}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+EMPLOYEE ROW
+========================================================= */
+
+function employeeRow(emp) {
+
+    const active =
+        emp.isActive;
+
+    const state =
+        emp.currentState ||
+        emp.status ||
+        'OFF DUTY';
+
+    const stateClass =
+        state === 'ON BREAK'
+            ? 'bg-amber-50 text-amber-700 border-amber-200'
+            : active
+            ? 'bg-teal-50 text-teal-700 border-teal-200'
+            : 'bg-slate-100 text-slate-500 border-slate-200';
+
+    const source =
+        emp.dataSource ||
+        'Biometric Terminal';
+
+    return `
+
+        <tr class="table-row">
+
+            <td class="p-4">
+
+                <div class="flex items-center gap-3">
+
+                    <div class="w-9 h-9 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 font-mono font-bold">
+                        ${escapeHTML(
+                            String(
+                                emp.userId ||
+                                'EM'
+                            ).substring(
+                                0,
+                                2
+                            )
+                        )}
+                    </div>
+
+                    <div>
+
+                        <div class="font-mono font-bold text-slate-800">
+                            ${escapeHTML(
+                                emp.userId
+                            )}
+                        </div>
+
+                        ${
+                            emp.isLate
+                                ? `
+                                <span class="text-[8px] text-rose-600 font-bold">
+                                    ${emp.minutesLate} MIN LATE
+                                </span>
+                                `
+                                : ''
+                        }
+
+                    </div>
+
+                </div>
+
+            </td>
+
+            <td class="p-4">
+
+                <span class="px-2 py-1 rounded-md border text-[9px] font-bold ${stateClass}">
+                    ${escapeHTML(state)}
+                </span>
+
+            </td>
+
+            <td class="p-4 font-mono text-xs text-slate-600">
+                ${emp.timeIn || '--'}
+            </td>
+
+            <td class="p-4 font-mono text-xs text-slate-500">
+                ${emp.timeOut || '--'}
+            </td>
+
+            <td class="p-4 font-mono text-xs text-slate-500">
+                ${emp.breakMinutes || 0}m
+            </td>
+
+            <td class="p-4 font-mono font-bold text-slate-800">
+                ${emp.netWorkHours || 0}h
+            </td>
+
+            <td class="p-4 font-mono font-bold ${
+                Number(emp.overtimeHours) > 0
+                    ? 'text-amber-600'
+                    : 'text-slate-400'
+            }">
+                ${emp.overtimeHours || 0}h
+            </td>
+
+            <td class="p-4">
+
+                <span class="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
+                    ${escapeHTML(source)}
+                </span>
+
+            </td>
+
+            <td class="p-4 text-right">
+
+                <button
+                    onclick="openLogsModal('${escapeAttribute(emp.userId)}')"
+                    class="px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200 text-teal-700 hover:bg-teal-600 hover:text-white text-[10px] font-bold transition">
+
+                    Inspect
+
+                </button>
+
+            </td>
+
+        </tr>
+    `;
+}
+
+
+/* =========================================================
+ON DUTY TABLE
+========================================================= */
+
+function onDutyTable(
+    employees
+) {
+
+    if (!employees.length) {
+
+        return `
+            <div class="p-16 text-center">
+                <i class="fa-solid fa-user-clock text-slate-300 text-3xl mb-3"></i>
+                <p class="text-sm font-bold text-slate-600">
+                    Nobody is currently on duty.
+                </p>
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="overflow-x-auto">
+
+            <table class="w-full min-w-[950px]">
+
+                <thead class="bg-slate-50 border-b border-slate-200">
+
+                    <tr class="text-[9px] uppercase tracking-wider text-slate-500">
+
+                        <th class="p-4 text-left">
+                            Employee
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Current State
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Time In
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Break
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Worked
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Last Activity
+                        </th>
+
+                        <th class="p-4 text-right">
+                            Audit
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-slate-100">
+
+                    ${employees.map(
+                        e => `
+                        <tr class="table-row">
+
+                            <td class="p-4 font-mono font-bold">
+                                ${escapeHTML(e.userId)}
+                            </td>
+
+                            <td class="p-4">
+
+                                <span class="px-2 py-1 rounded-md text-[9px] font-bold ${
+                                    e.currentState === 'ON BREAK'
+                                        ? 'bg-amber-50 text-amber-700'
+                                        : 'bg-teal-50 text-teal-700'
+                                }">
+                                    ${e.currentState}
+                                </span>
+
+                            </td>
+
+                            <td class="p-4 font-mono">
+                                ${e.timeIn}
+                            </td>
+
+                            <td class="p-4 font-mono">
+                                ${e.breakMinutes || 0}m
+                            </td>
+
+                            <td class="p-4 font-mono font-bold">
+                                ${e.netWorkHours || 0}h
+                            </td>
+
+                            <td class="p-4 text-xs text-slate-500">
+                                ${formatDateTime(e.lastActivity)}
+                            </td>
+
+                            <td class="p-4 text-right">
+
+                                <button
+                                    onclick="openLogsModal('${escapeAttribute(e.userId)}')"
+                                    class="text-teal-600 font-bold text-xs">
+                                    Inspect
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    `
+                    ).join('')}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+LATE TABLE
+========================================================= */
+
+function lateTable(
+    employees
+) {
+
+    if (!employees.length) {
+
+        return `
+            <div class="p-16 text-center">
+                <i class="fa-solid fa-circle-check text-teal-500 text-3xl mb-3"></i>
+                <p class="font-bold text-slate-700">
+                    No late arrivals recorded.
+                </p>
+                <p class="text-xs text-slate-400 mt-1">
+                    Attendance is currently within the 09:00 schedule.
+                </p>
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="overflow-x-auto">
+
+            <table class="w-full">
+
+                <thead class="bg-slate-50 border-b border-slate-200">
+
+                    <tr class="text-[9px] uppercase tracking-wider text-slate-500">
+
+                        <th class="p-4 text-left">
+                            Employee
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Scheduled
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Actual
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Delay
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Attendance Status
+                        </th>
+
+                        <th class="p-4 text-right">
+                            History
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-slate-100">
+
+                    ${employees.map(
+                        e => `
+
+                        <tr class="table-row">
+
+                            <td class="p-4 font-mono font-bold">
+                                ${escapeHTML(e.userId)}
+                            </td>
+
+                            <td class="p-4 font-mono">
+                                09:00
+                            </td>
+
+                            <td class="p-4 font-mono text-rose-600 font-bold">
+                                ${e.timeIn}
+                            </td>
+
+                            <td class="p-4">
+
+                                <span class="px-2 py-1 rounded-md bg-rose-50 border border-rose-200 text-rose-600 font-mono font-bold text-[10px]">
+                                    +${e.minutesLate}m
+                                </span>
+
+                            </td>
+
+                            <td class="p-4">
+
+                                <span class="text-[9px] font-bold text-rose-600">
+                                    EXCEPTION
+                                </span>
+
+                            </td>
+
+                            <td class="p-4 text-right">
+
+                                <button
+                                    onclick="openLogsModal('${escapeAttribute(e.userId)}')"
+                                    class="text-teal-600 font-bold text-xs">
+                                    Inspect History
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `
+                    ).join('')}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+OVERTIME TABLE
+========================================================= */
+
+function overtimeTable(
+    employees
+) {
+
+    if (!employees.length) {
+
+        return `
+            <div class="p-16 text-center">
+                <i class="fa-solid fa-bolt text-slate-300 text-3xl mb-3"></i>
+                <p class="font-bold text-slate-700">
+                    No overtime recorded.
+                </p>
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="overflow-x-auto">
+
+            <table class="w-full">
+
+                <thead class="bg-slate-50 border-b border-slate-200">
+
+                    <tr class="text-[9px] uppercase tracking-wider text-slate-500">
+
+                        <th class="p-4 text-left">
+                            Employee
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Net Worked
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Regular
+                        </th>
+
+                        <th class="p-4 text-left">
+                            Overtime
+                        </th>
+
+                        <th class="p-4 text-left">
+                            State
+                        </th>
+
+                        <th class="p-4 text-right">
+                            Audit
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-slate-100">
+
+                    ${employees.map(
+                        e => `
+
+                        <tr class="table-row">
+
+                            <td class="p-4 font-mono font-bold">
+                                ${escapeHTML(e.userId)}
+                            </td>
+
+                            <td class="p-4 font-mono">
+                                ${e.netWorkHours}h
+                            </td>
+
+                            <td class="p-4 font-mono">
+                                ${Math.min(
+                                    Number(e.netWorkHours || 0),
+                                    8
+                                )}h
+                            </td>
+
+                            <td class="p-4">
+
+                                <span class="px-2 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-700 font-mono font-bold text-[10px]">
+                                    ${e.overtimeHours}h
+                                </span>
+
+                            </td>
+
+                            <td class="p-4">
+
+                                <span class="text-[9px] font-bold ${
+                                    e.isActive
+                                        ? 'text-teal-600'
+                                        : 'text-slate-500'
+                                }">
+                                    ${
+                                        e.isActive
+                                            ? 'ACTIVE OT'
+                                            : 'COMPLETED'
+                                    }
+                                </span>
+
+                            </td>
+
+                            <td class="p-4 text-right">
+
+                                <button
+                                    onclick="openLogsModal('${escapeAttribute(e.userId)}')"
+                                    class="text-teal-600 font-bold text-xs">
+                                    Inspect
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `
+                    ).join('')}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+ATTENDANCE HISTORY
+========================================================= */
+
+async function renderHistory() {
+
+    updateHeader(
+        'Attendance History',
+        'Historical attendance records across employees and dates.'
+    );
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="surface-card rounded-2xl p-5">
+
+                <div class="flex flex-col md:flex-row gap-3">
+
+                    <div class="flex-1">
+                        <label class="label">
+                            Employee ID
+                        </label>
+
+                        <input
+                            id="historyEmployee"
+                            class="input"
+                            placeholder="All employees">
+                    </div>
+
+                    <div>
+                        <label class="label">
+                            From
+                        </label>
+
+                        <input
+                            id="historyFrom"
+                            type="date"
+                            class="input">
+                    </div>
+
+                    <div>
+                        <label class="label">
+                            To
+                        </label>
+
+                        <input
+                            id="historyTo"
+                            type="date"
+                            class="input">
+                    </div>
+
+                    <div class="flex items-end">
+
+                        <button
+                            onclick="loadHistory()"
+                            class="primary-btn">
+                            <i class="fa-solid fa-magnifying-glass mr-2"></i>
+                            Search
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div id="history-results">
+
+                <div class="surface-card rounded-2xl p-14 text-center">
+                    <i class="fa-solid fa-clock-rotate-left text-purple-400 text-3xl mb-3"></i>
+                    <p class="font-bold text-slate-700">
+                        Attendance History
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Select a date range and search.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+    const today =
+        datePicker.value;
+
+    const d =
+        new Date(
+            `${today}T00:00:00`
+        );
+
+    d.setDate(
+        d.getDate() - 30
+    );
+
+    document.getElementById(
+        'historyTo'
+    ).value = today;
+
+    document.getElementById(
+        'historyFrom'
+    ).value =
+        d.toISOString()
+            .split('T')[0];
+}
+
+
+/* =========================================================
+LOAD HISTORY
+========================================================= */
+
+async function loadHistory() {
+
+    const employee =
+        document.getElementById(
+            'historyEmployee'
+        ).value.trim();
+
+    const from =
+        document.getElementById(
+            'historyFrom'
+        ).value;
+
+    const to =
+        document.getElementById(
+            'historyTo'
+        ).value;
+
+    try {
+
+        const params =
+            new URLSearchParams({
+                from,
+                to
+            });
+
+        if (employee) {
+            params.set(
+                'employee',
+                employee
+            );
+        }
+
+        const res =
+            await fetch(
+                `/api/hr-history?${params}`,
+                {
+                    headers:{
+                        Authorization:
+                            `Bearer ${authToken}`
+                    }
+                }
+            );
+
+        if (
+            res.status === 401
+        ) {
+            return logoutHR();
+        }
+
+        const data =
+            await res.json();
+
+        if (!res.ok) {
+            throw new Error(
+                data.error
+            );
+        }
+
+        const records =
+            data.records || [];
+
+        const target =
+            document.getElementById(
+                'history-results'
+            );
+
+        if (!records.length) {
+
+            target.innerHTML = `
+                <div class="surface-card rounded-2xl p-14 text-center">
+                    <i class="fa-solid fa-inbox text-slate-300 text-3xl mb-3"></i>
+                    <p class="font-bold text-slate-700">
+                        No historical records found
+                    </p>
+                </div>
+            `;
+
+            return;
+        }
+
+        target.innerHTML = `
+
+            <div class="surface-card rounded-2xl overflow-hidden">
+
+                <div class="p-5 border-b border-slate-100">
+
+                    <h3 class="font-bold text-slate-800">
+                        Historical Punch Records
+                    </h3>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        ${records.length} records returned.
+                    </p>
+
+                </div>
+
+                <div class="overflow-x-auto">
+
+                    <table class="w-full min-w-[900px]">
+
+                        <thead class="bg-slate-50 border-b">
+
+                            <tr class="text-[9px] uppercase tracking-wider text-slate-500">
+
+                                <th class="p-4 text-left">
+                                    Employee
+                                </th>
+
+                                <th class="p-4 text-left">
+                                    Date
+                                </th>
+
+                                <th class="p-4 text-left">
+                                    Time
+                                </th>
+
+                                <th class="p-4 text-left">
+                                    Punch
+                                </th>
+
+                                <th class="p-4 text-left">
+                                    Source
+                                </th>
+
+                                <th class="p-4 text-left">
+                                    Status
+                                </th>
+
+                                <th class="p-4 text-right">
+                                    Audit
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody class="divide-y divide-slate-100">
+
+                            ${records.map(
+                                r => `
+
+                                <tr class="table-row">
+
+                                    <td class="p-4 font-mono font-bold">
+                                        ${escapeHTML(r.user_id)}
+                                    </td>
+
+                                    <td class="p-4 text-xs">
+                                        ${timestampToDate(r.timestamp)}
+                                    </td>
+
+                                    <td class="p-4 font-mono text-xs">
+                                        ${timestampToTime(r.timestamp)}
+                                    </td>
+
+                                    <td class="p-4">
+
+                                        <span class="px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-[9px] font-bold">
+                                            ${escapeHTML(r.state)}
+                                        </span>
+
+                                    </td>
+
+                                    <td class="p-4 text-xs text-slate-500">
+                                        ${escapeHTML(
+                                            r.source ||
+                                            (r.is_manual
+                                                ? 'MANUAL'
+                                                : 'BIOMETRIC')
+                                        )}
+                                    </td>
+
+                                    <td class="p-4">
+
+                                        <span class="text-[9px] font-bold ${
+                                            String(r.status).toUpperCase() === 'VOIDED'
+                                                ? 'text-rose-600'
+                                                : 'text-teal-600'
+                                        }">
+                                            ${escapeHTML(r.status || 'VALID')}
+                                        </span>
+
+                                    </td>
+
+                                    <td class="p-4 text-right">
+
+                                        ${
+                                            String(r.status).toUpperCase() === 'VALID'
+                                                ? `
+                                                <button
+                                                    onclick="voidPunch('${escapeAttribute(r.id)}')"
+                                                    class="text-rose-600 font-bold text-[10px]">
+                                                    Void
+                                                </button>
+                                                `
+                                                : '--'
+                                        }
+
+                                    </td>
+
+                                </tr>
+
+                            `
+                            ).join('')}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+        `;
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+        document.getElementById(
+            'history-results'
+        ).innerHTML = `
+            <div class="surface-card rounded-2xl p-12 text-center text-rose-600">
+                Unable to load attendance history.
+            </div>
+        `;
+
+    }
+}
+
+
+/* =========================================================
+VOIDED AUDIT
+========================================================= */
+
+function renderVoided() {
+
+    const logs =
+        rawDataCache.voidedLogs || [];
+
+    updateHeader(
+        'Voided Audit Trail',
+        'Historical punch records that were administratively voided.'
+    );
+
+    const total =
+        logs.length;
+
+    const manual =
+        logs.filter(
+            x => x.is_manual
+        ).length;
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+                ${metric(
+                    'Voided Today',
+                    total,
+                    'fa-shield-halved',
+                    'rose'
+                )}
+
+                ${metric(
+                    'Manual Records',
+                    manual,
+                    'fa-pen',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Audit Integrity',
+                    '100%',
+                    'fa-shield-check',
+                    'teal'
+                )}
+
+            </div>
+
+            <div class="surface-card rounded-2xl overflow-hidden">
+
+                <div class="p-5 border-b border-slate-100">
+
+                    <h3 class="font-bold text-slate-800">
+                        Immutable-Style Void Register
+                    </h3>
+
+                    <p class="text-xs text-slate-500 mt-1">
+                        Original attendance records remain visible with their void reason.
+                    </p>
+
+                </div>
+
+                ${
+                    logs.length
+                        ? `
+                        <div class="overflow-x-auto">
+
+                            <table class="w-full min-w-[1000px]">
+
+                                <thead class="bg-slate-50">
+
+                                    <tr class="text-[9px] uppercase tracking-wider text-slate-500">
+
+                                        <th class="p-4 text-left">
+                                            Employee
+                                        </th>
+
+                                        <th class="p-4 text-left">
+                                            Original Time
+                                        </th>
+
+                                        <th class="p-4 text-left">
+                                            Punch
+                                        </th>
+
+                                        <th class="p-4 text-left">
+                                            Reason
+                                        </th>
+
+                                        <th class="p-4 text-left">
+                                            Voided At
+                                        </th>
+
+                                        <th class="p-4 text-left">
+                                            Status
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody class="divide-y divide-slate-100">
+
+                                    ${logs.map(
+                                        log => `
+
+                                        <tr class="table-row">
+
+                                            <td class="p-4 font-mono font-bold">
+                                                ${escapeHTML(log.user_id)}
+                                            </td>
+
+                                            <td class="p-4 font-mono">
+                                                ${formatDateTime(log.timestamp)}
+                                            </td>
+
+                                            <td class="p-4">
+
+                                                <span class="px-2 py-1 rounded-md bg-rose-50 text-rose-600 text-[9px] font-bold">
+                                                    ${escapeHTML(log.state)}
+                                                </span>
+
+                                            </td>
+
+                                            <td class="p-4 text-xs text-slate-500">
+                                                ${escapeHTML(
+                                                    log.void_reason ||
+                                                    'Administrative void'
+                                                )}
+                                            </td>
+
+                                            <td class="p-4 text-xs text-slate-500">
+                                                ${formatDateTime(log.voided_at)}
+                                            </td>
+
+                                            <td class="p-4">
+
+                                                <span class="px-2 py-1 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-[9px] font-bold">
+                                                    VOIDED
+                                                </span>
+
+                                            </td>
+
+                                        </tr>
+
+                                    `
+                                    ).join('')}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+                        `
+                        : `
+                        <div class="p-16 text-center">
+
+                            <i class="fa-solid fa-shield-check text-teal-500 text-3xl mb-3"></i>
+
+                            <p class="font-bold text-slate-700">
+                                No voided records
+                            </p>
+
+                            <p class="text-xs text-slate-400 mt-1">
+                                The selected day's audit trail is clear.
+                            </p>
+
+                        </div>
+                        `
+                }
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+SYSTEM ACTIVITY
+========================================================= */
+
+async function renderActivity() {
+
+    updateHeader(
+        'System Activity',
+        'Administrative actions, imports, biometric events and attendance changes.'
+    );
+
+    const activity =
+        rawDataCache.activity || [];
+
+    document.getElementById(
+        'page-content'
+    ).innerHTML = `
+
+        <div class="page-fade space-y-6">
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                ${metric(
+                    'Today's Events',
+                    activity.length,
+                    'fa-list-check',
+                    'sky'
+                )}
+
+                ${metric(
+                    'Manual Changes',
+                    activity.filter(
+                        x =>
+                            x.event_type ===
+                            'MANUAL_OVERRIDE'
+                    ).length,
+                    'fa-pen-to-square',
+                    'amber'
+                )}
+
+                ${metric(
+                    'Biometric Sync',
+                    activity.filter(
+                        x =>
+                            x.event_type ===
+                            'BIOMETRIC_SYNC'
+                    ).length,
+                    'fa-fingerprint',
+                    'teal'
+                )}
+
+                ${metric(
+                    'Audit Events',
+                    activity.length,
+                    'fa-shield-halved',
+                    'purple'
+                )}
+
+            </div>
+
+            <div class="surface-card rounded-2xl p-6">
+
+                <div class="flex justify-between items-center mb-6">
+
+                    <div>
+                        <h3 class="font-bold text-slate-800">
+                            Operational Activity Feed
+                        </h3>
+
+                        <p class="text-xs text-slate-500 mt-1">
+                            Most recent administrative and attendance system events.
                         </p>
                     </div>
 
-                    <div id="form-register" class="auth-form-panel hidden space-y-4">
-                        <div class="border-b border-slate-100 pb-3">
-                            <h2 class="text-base font-bold text-slate-800">Create Admin Account</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Register new Tikix HR Supervisor credentials</p>
-                        </div>
-                        <form id="registerForm" class="space-y-3">
-                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Full Name</label><input type="text" id="reg-fullname" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="John Doe"></div>
-                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Company / Organization</label><input type="text" id="reg-company" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="Acme Inc."></div>
-                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Admin Email</label><input type="email" id="reg-email" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="hr.admin@company.com"></div>
-                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">Password</label><input type="password" id="reg-password" autocomplete="new-password" required minlength="6" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="••••••••••••"></div>
-                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 border border-purple-800">Register Administrator</button>
-                        </form>
-                        <p class="text-center text-xs text-slate-500 pt-1">Already have an account? <button type="button" onclick="showAuthSubForm('login')" class="text-teal-600 hover:underline font-bold">Back to Login</button></p>
-                    </div>
+                    <button
+                        onclick="loadSystemActivity()"
+                        class="secondary-btn">
 
-                    <div id="form-forgot" class="auth-form-panel hidden space-y-4">
-                        <div class="border-b border-slate-100 pb-3">
-                            <h2 class="text-base font-bold text-slate-800">Reset Password</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Recovery instructions will be sent to admin email</p>
-                        </div>
-                        <form id="forgotForm" class="space-y-4">
-                            <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Registered Admin Email</label><input type="email" id="forgot-email" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 focus:border-teal-500 outline-none transition" placeholder="admin@company.com"></div>
-                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 border border-purple-800">Send Reset Instructions</button>
-                        </form>
-                        <p class="text-center text-xs text-slate-500 pt-2">Remembered password? <button type="button" onclick="showAuthSubForm('login')" class="text-teal-600 hover:underline font-bold">Back to Login</button></p>
-                    </div>
+                        <i class="fa-solid fa-rotate mr-2"></i>
+                        Refresh
+
+                    </button>
+
                 </div>
+
+                <div id="activity-feed">
+
+                    ${renderActivityItems(
+                        activity
+                    )}
+
+                </div>
+
             </div>
+
         </div>
-    </div>
+    `;
+}
 
-    <div id="dashboard-view" class="hidden h-screen w-full flex">
-        <aside class="w-72 bg-white/90 border-r border-slate-200 flex flex-col justify-between shrink-0 z-20 backdrop-blur-xl">
-            <div>
-                <div class="h-20 px-6 border-b border-slate-200 flex items-center justify-between">
-                    <div class="flex items-center gap-3 min-h-[32px]">
-                        <picture>
-                            <source srcset="/tikix.png" type="image/png">
-                            <img id="sidebar-logo-img" src="/tikix.svg" alt="Tikix Logo"
-                                 class="h-8 w-auto object-contain logo-glow"
-                                 onerror="this.onerror=null; this.src='/tikix.png';">
-                        </picture>
-                        <div>
-                            <p class="text-[10px] text-slate-500 font-medium">Attendance Command</p>
+
+/* =========================================================
+ACTIVITY ITEMS
+========================================================= */
+
+function renderActivityItems(
+    activity
+) {
+
+    if (!activity.length) {
+
+        return `
+            <div class="text-center py-14">
+
+                <i class="fa-solid fa-list text-slate-300 text-3xl mb-3"></i>
+
+                <p class="font-bold text-slate-600">
+                    No system activity
+                </p>
+
+                <p class="text-xs text-slate-400 mt-1">
+                    Activity will appear as the system processes events.
+                </p>
+
+            </div>
+        `;
+
+    }
+
+    return activity.map(
+        event => {
+
+            const icon =
+                getActivityIcon(
+                    event.event_type
+                );
+
+            return `
+
+                <div class="activity-line flex gap-4 pb-6">
+
+                    <div class="w-8 h-8 shrink-0 rounded-xl bg-slate-100 flex items-center justify-center">
+
+                        <i class="fa-solid ${icon} text-slate-500 text-xs"></i>
+
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+
+                        <div class="flex justify-between gap-4">
+
+                            <div>
+
+                                <p class="text-xs font-bold text-slate-800">
+                                    ${escapeHTML(
+                                        event.event_type
+                                    )}
+                                </p>
+
+                                <p class="text-xs text-slate-500 mt-1">
+                                    ${escapeHTML(
+                                        event.description ||
+                                        ''
+                                    )}
+                                </p>
+
+                            </div>
+
+                            <time class="text-[9px] font-mono text-slate-400 whitespace-nowrap">
+                                ${formatDateTime(
+                                    event.created_at
+                                )}
+                            </time>
+
                         </div>
+
+                        ${
+                            event.actor_email
+                                ? `
+                                <div class="mt-2 text-[9px] text-slate-400">
+                                    Actor:
+                                    <span class="font-mono">
+                                        ${escapeHTML(
+                                            event.actor_email
+                                        )}
+                                    </span>
+                                </div>
+                                `
+                                : ''
+                        }
+
                     </div>
+
                 </div>
-                <nav class="p-4 space-y-1.5">
-                    <div class="px-3 pt-3 pb-2"><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Supervision Desk</span></div>
-                    <button onclick="switchTab('all')" id="nav-all" class="nav-item active w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-layer-group w-4 text-slate-400"></i><span>All Attendance</span></span>
-                        <span id="badge-all" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono">0</span>
-                    </button>
-                    <button onclick="switchTab('onduty')" id="nav-onduty" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-user-check w-4 text-teal-600"></i><span>On-Duty Personnel</span></span>
-                        <span id="badge-onduty" class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 text-[10px] font-mono">0</span>
-                    </button>
-                    <button onclick="switchTab('late')" id="nav-late" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-clock-rotate-left w-4 text-rose-600"></i><span>Late Arrivals</span></span>
-                        <span id="badge-late" class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-mono">0</span>
-                    </button>
-                    <button onclick="switchTab('overtime')" id="nav-overtime" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-bolt w-4 text-amber-500"></i><span>Overtime Roster</span></span>
-                        <span id="badge-overtime" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-mono">0</span>
-                    </button>
-                    <div class="px-3 pt-6 pb-2"><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Audit & Oversight</span></div>
-                    <button onclick="switchTab('voided')" id="nav-voided" class="nav-item w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold text-slate-600">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-shield-halved w-4 text-slate-400"></i><span>Voided Audit Trail</span></span>
-                        <span id="badge-voided" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-mono">0</span>
-                    </button>
-                </nav>
-            </div>
-            <div class="p-4 border-t border-slate-200 bg-slate-50/70 space-y-2">
-                <button onclick="openManualModal()" class="w-full group flex items-center justify-center gap-2.5 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 py-2.5 px-4 text-xs font-bold transition">
-                    <i class="fa-solid fa-sliders text-teal-600 group-hover:text-white"></i><span>Manual Override</span>
-                </button>
-                <button onclick="logoutHR()" class="w-full flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 py-2.5 px-4 text-xs font-bold transition">
-                    <i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span>
-                </button>
-            </div>
-        </aside>
+            `;
 
-        <main class="flex-1 min-w-0 flex flex-col overflow-hidden relative">
-            <header class="h-20 shrink-0 border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 flex items-center justify-between z-10">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-3">
-                        <h2 id="view-title" class="text-xl font-bold text-slate-900 tracking-tight truncate">All Employee Attendance</h2>
-                        <span class="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-teal-600 beacon-online"></span> Tikix Live Server Sync
-                        </span>
-                    </div>
-                    <p id="view-subtitle" class="text-xs text-slate-500 mt-1">Real-time attendance telemetry and supervisor analytics</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 font-medium shadow-sm">
-                        <i class="fa-regular fa-calendar text-teal-600"></i>
-                        <input type="date" id="date-picker" class="date-input bg-transparent focus:outline-none cursor-pointer">
-                    </div>
-                    <form id="usbForm" class="flex items-center">
-                        <input type="file" id="logfile" name="logfile" accept=".csv,.dat,.txt" required class="hidden">
-                        <button type="button" onclick="document.getElementById('logfile').click()" class="h-10 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-2 shadow-sm">
-                            <i class="fa-solid fa-file-import text-slate-400"></i><span>Import USB</span>
-                        </button>
-                        <button type="submit" id="usbSubmitBtn" class="hidden">Submit</button>
-                    </form>
-                </div>
-            </header>
+        }
+    ).join('');
+}
 
-            <div class="flex-1 overflow-y-auto p-8 space-y-8">
-                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-                    <div class="surface-card surface-card-hover rounded-2xl p-5">
-                        <div class="flex items-center justify-between text-slate-400 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider">Total Headcount</span><div class="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-users text-slate-500 text-xs"></i></div></div>
-                        <p id="stat-total" class="text-3xl font-extrabold text-slate-900 font-mono">0</p>
-                    </div>
-                    <div class="surface-card surface-card-hover rounded-2xl p-5">
-                        <div class="flex items-center justify-between text-teal-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Active On-Duty</span><div class="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center"><i class="fa-solid fa-user-check text-xs"></i></div></div>
-                        <p id="stat-active" class="text-3xl font-extrabold text-teal-700 font-mono">0</p>
-                    </div>
-                    <div class="surface-card surface-card-hover rounded-2xl p-5">
-                        <div class="flex items-center justify-between text-rose-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Late Arrivals</span><div class="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center"><i class="fa-solid fa-clock text-xs"></i></div></div>
-                        <p id="stat-late" class="text-3xl font-extrabold text-rose-600 font-mono">0</p>
-                    </div>
-                    <div class="surface-card surface-card-hover rounded-2xl p-5">
-                        <div class="flex items-center justify-between text-teal-700 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Punctuality</span><div class="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center"><i class="fa-solid fa-bullseye text-purple-700 text-xs"></i></div></div>
-                        <p id="stat-punctuality" class="text-3xl font-extrabold text-slate-800 font-mono">100%</p>
-                    </div>
-                    <div class="surface-card surface-card-hover rounded-2xl p-5">
-                        <div class="flex items-center justify-between text-amber-500 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Overtime Accum.</span><div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center"><i class="fa-solid fa-bolt text-xs"></i></div></div>
-                        <p id="stat-ot" class="text-3xl font-extrabold text-amber-600 font-mono">0 hrs</p>
-                    </div>
-                    <div class="surface-card surface-card-hover rounded-2xl p-5">
-                        <div class="flex items-center justify-between text-sky-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Avg Shift Hours</span><div class="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center"><i class="fa-solid fa-chart-simple text-xs"></i></div></div>
-                        <p id="stat-avg" class="text-3xl font-extrabold text-slate-700 font-mono">0 hrs</p>
-                    </div>
-                </div>
 
-                <section class="surface-card rounded-2xl overflow-hidden border border-slate-200">
-                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white/60">
-                        <div class="flex items-center gap-2.5"><div class="w-2 h-2 rounded-full bg-teal-600"></div><h3 class="text-sm font-bold text-slate-800">Live Timecards Matrix</h3></div>
-                        <span class="text-[11px] text-slate-400 font-mono">Tikix Data Stream Protocol v2.4</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[1000px]">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-                                    <th class="px-6 py-4">Employee ID</th><th class="px-4 py-4">Time In</th><th class="px-4 py-4">Time Out</th><th class="px-4 py-4">Break Used</th><th class="px-4 py-4">Net Worked</th><th class="px-4 py-4">Overtime</th><th class="px-4 py-4">Data Source</th><th class="px-6 py-4 text-right">Audit Options</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employee-table" class="divide-y divide-slate-100 text-xs">
-                                <tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl mb-3"></i><br>Syncing Tikix HR telemetry data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
-        </main>
-    </div>
+/* =========================================================
+REFRESH ACTIVITY
+========================================================= */
 
-    <div id="manualModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
-        <div class="surface-card rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 shadow-2xl">
-            <div class="px-6 py-5 border-b border-slate-100 flex items-center gap-3.5 bg-white/70">
-                <div class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700"><i class="fa-solid fa-pen-to-square"></i></div>
-                <div><h3 class="text-sm font-bold text-slate-800">Manual Punch Override</h3><p class="text-xs text-slate-500 mt-0.5">Create an audited manual attendance record</p></div>
-            </div>
-            <form id="manualPunchForm" class="p-6 space-y-4">
-                <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Employee ID</label><input type="text" id="manualEmpId" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none font-mono" placeholder="EMP-1002"></div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Date</label><input type="date" id="manualDate" required class="date-input w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none"></div>
-                    <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Time</label><input type="time" id="manualTime" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none font-mono"></div>
-                </div>
-                <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Punch State</label>
-                    <select id="manualState" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none">
-                        <option value="Time-In">Time-In</option><option value="Break-Out">Break-Out</option><option value="Break-In">Break-In</option><option value="Overtime-In">Overtime-In</option><option value="Overtime-Out">Overtime-Out</option><option value="Time-Out">Time-Out</option>
-                    </select>
-                </div>
-                <div><label class="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Override Reason</label><input type="text" id="manualReason" placeholder="e.g. Hardware connectivity drop" required class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-500 outline-none"></div>
-                <div class="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="closeManualModal()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-bold transition">Cancel</button>
-                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white text-xs font-bold transition shadow-md shadow-purple-200 border border-purple-800">Save Record</button>
-                </div>
-            </form>
-        </div>
-    </div>
+async function loadSystemActivity() {
 
-    <div id="logsModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
-        <div class="surface-card rounded-2xl max-w-2xl w-full overflow-hidden border border-slate-200 shadow-2xl">
-            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white/70">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600"><i class="fa-solid fa-list-check"></i></div>
-                    <div><h3 class="text-sm font-bold text-slate-800">Punch Audit & Inspection</h3><p class="text-xs text-slate-500 mt-0.5">Audit raw logs or execute soft voids</p></div>
-                </div>
-                <button onclick="closeLogsModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-6">
-                <div class="border border-slate-200 rounded-xl overflow-hidden">
-                    <table class="w-full text-left text-xs">
-                        <thead>
-                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-                                <th class="px-4 py-3">Timestamp</th><th class="px-4 py-3">Punch Type</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logsTableBody" class="divide-y divide-slate-100 font-mono"></tbody>
-                    </table>
-                </div>
-                <div class="flex justify-end pt-5"><button type="button" onclick="closeLogsModal()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-bold transition">Close Window</button></div>
-            </div>
-        </div>
-    </div>
+    try {
 
-    <script>
-        (function() {
-            let socket = null;
-            if (typeof io !== 'undefined') { socket = io(); }
-
-            const datePicker = document.getElementById('date-picker');
-            const authView = document.getElementById('auth-view');
-            const dashboardView = document.getElementById('dashboard-view');
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            const forgotForm = document.getElementById('forgotForm');
-            const authAlert = document.getElementById('auth-alert');
-            const alertIcon = document.getElementById('auth-alert-icon');
-            const alertMsg = document.getElementById('auth-alert-message');
-
-            let currentTab = 'all';
-            let rawDataCache = { employees: [], stats: {}, voidedLogs: [] };
-            let authToken = localStorage.getItem('hr_token');
-
-            if (authToken) { showDashboard(); } else { showAuth(); }
-
-            function showDashboard() {
-                authView.classList.add('hidden');
-                dashboardView.classList.remove('hidden');
-                datePicker.value = new Date().toISOString().split('T')[0];
-                fetchDashboardData();
-            }
-
-            function showAuth() {
-                dashboardView.classList.add('hidden');
-                authView.classList.remove('hidden');
-                showAuthSubForm('login');
-            }
-
-            function showAuthSubForm(formType) {
-                hideAlert();
-                const loginPanel = document.getElementById('form-login');
-                const registerPanel = document.getElementById('form-register');
-                const forgotPanel = document.getElementById('form-forgot');
-
-                loginPanel.classList.add('hidden');
-                registerPanel.classList.add('hidden');
-                forgotPanel.classList.add('hidden');
-
-                if (formType === 'register') registerPanel.classList.remove('hidden');
-                else if (formType === 'forgot') forgotPanel.classList.remove('hidden');
-                else loginPanel.classList.remove('hidden');
-            }
-
-            function showAlert(msg, isSuccess = false) {
-                alertMsg.innerText = msg;
-                authAlert.className = isSuccess 
-                    ? "p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-teal-50 border border-teal-200 text-teal-700"
-                    : "p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-600";
-                alertIcon.className = isSuccess ? "fa-solid fa-circle-check shrink-0" : "fa-solid fa-circle-exclamation shrink-0";
-                authAlert.classList.remove('hidden');
-            }
-
-            function hideAlert() { authAlert.classList.add('hidden'); }
-
-            function logoutHR() {
-                localStorage.removeItem('hr_token');
-                localStorage.removeItem('hr_user');
-                authToken = null;
-                showAuth();
-            }
-
-            window.showAuthSubForm = showAuthSubForm;
-            window.logoutHR = logoutHR;
-            window.openManualModal = openManualModal;
-            window.closeManualModal = closeManualModal;
-            window.openLogsModal = openLogsModal;
-            window.closeLogsModal = closeLogsModal;
-            window.voidPunch = voidPunch;
-            window.switchTab = switchTab;
-
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); hideAlert();
-                const email = document.getElementById('login-email').value;
-                const password = document.getElementById('login-password').value;
-                try {
-                    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-                    const data = await res.json();
-                    if (res.ok && data.token) { localStorage.setItem('hr_token', data.token); localStorage.setItem('hr_user', JSON.stringify(data.user)); authToken = data.token; showDashboard(); }
-                    else showAlert(data.error || 'Authentication failed.');
-                } catch (err) { showAlert('Server communication error.'); }
-            });
-
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); hideAlert();
-                const payload = { fullName: document.getElementById('reg-fullname').value, companyName: document.getElementById('reg-company').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value };
-                try {
-                    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    const data = await res.json();
-                    if (res.ok) { showAlert(data.message || 'Registration successful', true); setTimeout(() => showAuthSubForm('login'), 1500); }
-                    else showAlert(data.error || 'Registration failed.');
-                } catch (err) { showAlert('Failed to connect to backend service.'); }
-            });
-
-            forgotForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); hideAlert();
-                const email = document.getElementById('forgot-email').value;
-                try {
-                    const res = await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-                    const data = await res.json();
-                    if (res.ok) showAlert(data.message || 'Recovery sent', true);
-                    else showAlert(data.error || 'Password recovery failed.');
-                } catch (err) { showAlert('Unable to request password reset.'); }
-            });
-
-            async function fetchDashboardData() {
-                if (!authToken) return;
-                try {
-                    const selectedDate = datePicker.value;
-                    const res = await fetch(`/api/hr-analytics?date=${selectedDate}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
-                    if (res.status === 401) return logoutHR();
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    rawDataCache = await res.json();
-                    updateSidebarBadges();
-                    renderCurrentTab();
-                } catch (error) {
-                    console.error(error);
-                    document.getElementById('employee-table').innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-exclamation text-rose-500 text-2xl mb-3"></i><br><span class="text-xs font-bold">Unable to load Tikix attendance telemetry</span></td></tr>`;
+        const res =
+            await fetch(
+                '/api/system-activity?limit=200',
+                {
+                    headers:{
+                        Authorization:
+                            `Bearer ${authToken}`
+                    }
                 }
-            }
+            );
 
-            function updateSidebarBadges() {
-                const { stats = {}, voidedLogs = [] } = rawDataCache;
-                document.getElementById('badge-all').innerText = stats.totalHeadcount || 0;
-                document.getElementById('badge-onduty').innerText = stats.currentlyActive || 0;
-                document.getElementById('badge-late').innerText = stats.lateArrivals || 0;
-                document.getElementById('badge-overtime').innerText = stats.overtimeWorkers || 0;
-                document.getElementById('badge-voided').innerText = voidedLogs ? voidedLogs.length : 0;
-                document.getElementById('stat-total').innerText = stats.totalHeadcount || 0;
-                document.getElementById('stat-active').innerText = stats.currentlyActive || 0;
-                document.getElementById('stat-late').innerText = stats.lateArrivals || 0;
-                document.getElementById('stat-punctuality').innerText = `${stats.punctualityRate || 100}%`;
-                document.getElementById('stat-ot').innerText = `${stats.totalOTAccumulated || 0} hrs`;
-                document.getElementById('stat-avg').innerText = `${stats.averageWorkHours || 0} hrs`;
-            }
+        const data =
+            await res.json();
 
-            function switchTab(tabName) {
-                currentTab = tabName;
-                ['all', 'onduty', 'late', 'overtime', 'voided'].forEach(t => {
-                    const btn = document.getElementById(`nav-${t}`);
-                    if (btn) btn.classList.toggle('active', t === tabName);
-                });
-                renderCurrentTab();
-            }
+        if (!res.ok) {
+            throw new Error(
+                data.error
+            );
+        }
 
-            function updateViewHeader(title, subtitle) {
-                document.getElementById('view-title').innerText = title;
-                document.getElementById('view-subtitle').innerText = subtitle;
-            }
+        rawDataCache.activity =
+            data.activity || [];
 
-            function renderCurrentTab() {
-                const tbody = document.getElementById('employee-table');
-                tbody.innerHTML = '';
-                let filteredEmployees = [...(rawDataCache.employees || [])];
+        updateBadges();
 
-                if (currentTab === 'onduty') { filteredEmployees = filteredEmployees.filter(e => e.status && e.status.toUpperCase() !== 'TIME-OUT'); updateViewHeader('On-Duty Personnel', 'Employees currently clocked in'); }
-                else if (currentTab === 'late') { filteredEmployees = filteredEmployees.filter(e => e.isLate); updateViewHeader('Late Arrival Exceptions', 'Attendance exceptions needing review'); }
-                else if (currentTab === 'overtime') { filteredEmployees = filteredEmployees.filter(e => parseFloat(e.overtimeHours) > 0); updateViewHeader('Overtime Roster', 'Staff accumulating extra hours'); }
-                else if (currentTab === 'voided') { updateViewHeader('Voided Audit Trail', 'Soft-deleted historical log entries'); renderVoidedTable(tbody); return; }
-                else { updateViewHeader('All Employee Attendance', 'Real-time attendance telemetry and supervisor analytics'); }
+        const feed =
+            document.getElementById(
+                'activity-feed'
+            );
 
-                if (filteredEmployees.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-inbox text-xl mb-2 block text-slate-300"></i><span>No records matching this view filter.</span></td></tr>`;
+        if (feed) {
+
+            feed.innerHTML =
+                renderActivityItems(
+                    rawDataCache.activity
+                );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+    }
+}
+
+
+/* =========================================================
+ACTIVITY ICONS
+========================================================= */
+
+function getActivityIcon(
+    type
+) {
+
+    const map = {
+        LOGIN:
+            'fa-right-to-bracket',
+
+        LOGOUT:
+            'fa-right-from-bracket',
+
+        MANUAL_OVERRIDE:
+            'fa-pen-to-square',
+
+        VOID_PUNCH:
+            'fa-shield-halved',
+
+        USB_IMPORT:
+            'fa-file-import',
+
+        BIOMETRIC_SYNC:
+            'fa-fingerprint',
+
+        ADMIN_REGISTERED:
+            'fa-user-plus'
+    };
+
+    return (
+        map[type] ||
+        'fa-circle-info'
+    );
+}
+
+
+/* =========================================================
+LOG MODAL
+========================================================= */
+
+function openLogsModal(
+    userId
+) {
+
+    const emp =
+        (rawDataCache.employees || [])
+            .find(
+                e =>
+                    String(
+                        e.userId
+                    ) ===
+                    String(userId)
+            );
+
+    if (!emp) return;
+
+    const body =
+        document.getElementById(
+            'logsTableBody'
+        );
+
+    document.getElementById(
+        'logsModalEmployee'
+    ).textContent =
+        `Employee: ${userId}`;
+
+    body.innerHTML =
+        (emp.rawLogs || [])
+            .map(
+                log => `
+
+                <tr class="border-t border-slate-100">
+
+                    <td class="p-3 font-mono text-slate-500">
+                        ${formatDateTime(log.timestamp)}
+                    </td>
+
+                    <td class="p-3 font-bold">
+                        ${escapeHTML(log.state)}
+                    </td>
+
+                    <td class="p-3 text-xs">
+                        ${escapeHTML(
+                            log.source ||
+                            (log.is_manual
+                                ? 'MANUAL'
+                                : 'BIOMETRIC')
+                        )}
+                    </td>
+
+                    <td class="p-3">
+
+                        <span class="px-2 py-1 rounded-md text-[9px] font-bold ${
+                            String(log.status).toUpperCase() === 'VOIDED'
+                                ? 'bg-rose-50 text-rose-600'
+                                : 'bg-teal-50 text-teal-700'
+                        }">
+
+                            ${escapeHTML(
+                                log.status ||
+                                'VALID'
+                            )}
+
+                        </span>
+
+                    </td>
+
+                    <td class="p-3 text-right">
+
+                        ${
+                            String(
+                                log.status ||
+                                ''
+                            ).toUpperCase() !==
+                            'VOIDED'
+                                ? `
+                                <button
+                                    onclick="voidPunch('${escapeAttribute(log.id)}')"
+                                    class="px-2.5 py-1 rounded-md bg-rose-50 text-rose-600 border border-rose-200 text-[9px] font-bold hover:bg-rose-600 hover:text-white">
+                                    Void
+                                </button>
+                                `
+                                : `
+                                <span class="text-[9px] text-slate-400">
+                                    VOIDED
+                                </span>
+                                `
+                        }
+
+                    </td>
+
+                </tr>
+            `
+            )
+            .join('');
+
+    document
+        .getElementById(
+            'logsModal'
+        )
+        .classList.remove(
+            'hidden'
+        );
+}
+
+function closeLogsModal() {
+
+    document
+        .getElementById(
+            'logsModal'
+        )
+        .classList.add(
+            'hidden'
+        );
+}
+
+
+/* =========================================================
+VOID PUNCH
+========================================================= */
+
+async function voidPunch(
+    id
+) {
+
+    const reason =
+        prompt(
+            'Enter the mandatory audit reason for voiding this punch:'
+        );
+
+    if (!reason || !reason.trim()) {
+        return;
+    }
+
+    try {
+
+        const res =
+            await fetch(
+                '/api/punch/void',
+                {
+                    method:'POST',
+                    headers:{
+                        'Content-Type':
+                            'application/json',
+
+                        Authorization:
+                            `Bearer ${authToken}`
+                    },
+
+                    body:
+                        JSON.stringify({
+                            id,
+                            reason:
+                                reason.trim()
+                        })
+                }
+            );
+
+        const data =
+            await res.json();
+
+        if (!res.ok) {
+
+            alert(
+                data.error ||
+                'Unable to void punch.'
+            );
+
+            return;
+        }
+
+        alert(
+            data.message ||
+            'Punch voided successfully.'
+        );
+
+        closeLogsModal();
+
+        await fetchDashboardData();
+
+    } catch {
+
+        alert(
+            'Unable to communicate with the HR server.'
+        );
+
+    }
+}
+
+
+/* =========================================================
+MANUAL MODAL
+========================================================= */
+
+function openManualModal() {
+
+    document.getElementById(
+        'manualDate'
+    ).value =
+        datePicker.value;
+
+    document
+        .getElementById(
+            'manualModal'
+        )
+        .classList.remove(
+            'hidden'
+        );
+}
+
+function closeManualModal() {
+
+    document
+        .getElementById(
+            'manualModal'
+        )
+        .classList.add(
+            'hidden'
+        );
+}
+
+
+/* =========================================================
+MANUAL SUBMIT
+========================================================= */
+
+document
+    .getElementById(
+        'manualPunchForm'
+    )
+    .addEventListener(
+        'submit',
+        async e => {
+
+            e.preventDefault();
+
+            const payload = {
+
+                userId:
+                    document.getElementById(
+                        'manualEmpId'
+                    ).value.trim(),
+
+                date:
+                    document.getElementById(
+                        'manualDate'
+                    ).value,
+
+                time:
+                    document.getElementById(
+                        'manualTime'
+                    ).value,
+
+                state:
+                    document.getElementById(
+                        'manualState'
+                    ).value,
+
+                reason:
+                    document.getElementById(
+                        'manualReason'
+                    ).value.trim()
+
+            };
+
+            try {
+
+                const res =
+                    await fetch(
+                        '/api/punch/manual',
+                        {
+                            method:'POST',
+
+                            headers:{
+                                'Content-Type':
+                                    'application/json',
+
+                                Authorization:
+                                    `Bearer ${authToken}`
+                            },
+
+                            body:
+                                JSON.stringify(
+                                    payload
+                                )
+                        }
+                    );
+
+                const data =
+                    await res.json();
+
+                if (!res.ok) {
+
+                    alert(
+                        data.error ||
+                        'Unable to create manual record.'
+                    );
+
                     return;
                 }
 
-                filteredEmployees.forEach(emp => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50 transition-colors';
-                    const isLate = !!emp.isLate;
-                    const isActive = emp.status && emp.status.toUpperCase() !== 'TIME-OUT';
-                    let sourceBadge = emp.isEdited ? `<span class="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-bold"><i class="fa-solid fa-pen text-[8px] mr-1"></i>Manual Override</span>` : `<span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-fingerprint text-[8px] mr-1"></i>Tikix Terminal</span>`;
-                    let statusBadge = isActive ? `<span class="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-bold flex items-center gap-1.5 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>ACTIVE</span>` : `<span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold flex items-center gap-1.5 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>OFF DUTY</span>`;
+                alert(
+                    data.message ||
+                    'Manual record created.'
+                );
 
-                    tr.innerHTML = `
-                        <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center font-bold text-purple-700 font-mono">${(emp.userId || 'EM').substring(0, 2)}</div><div><div class="flex items-center gap-2"><span class="font-bold text-slate-800 font-mono">${emp.userId}</span>${isLate ? `<span class="px-1.5 py-0.2 rounded bg-rose-50 text-rose-600 text-[9px] font-bold border border-rose-200">LATE</span>` : ''}</div><div class="mt-1">${statusBadge}</div></div></div></td>
-                        <td class="px-4 py-4 font-mono text-slate-600">${emp.timeIn || '--'}</td>
-                        <td class="px-4 py-4 font-mono text-slate-500">${emp.timeOut || '--'}</td>
-                        <td class="px-4 py-4 font-mono text-slate-500">${emp.breakMinutes || 0} m</td>
-                        <td class="px-4 py-4 font-mono font-bold text-slate-800">${emp.netWorkHours || 0} h</td>
-                        <td class="px-4 py-4 font-mono font-bold ${parseFloat(emp.overtimeHours) > 0 ? 'text-amber-600' : 'text-slate-400'}">${emp.overtimeHours || 0} h</td>
-                        <td class="px-4 py-4">${sourceBadge}</td>
-                        <td class="px-6 py-4 text-right"><button onclick="openLogsModal('${emp.userId}')" class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-600 border border-teal-200 text-teal-700 hover:text-white text-xs font-bold transition">Inspect</button></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                e.target.reset();
+
+                closeManualModal();
+
+                await fetchDashboardData();
+
+            } catch {
+
+                alert(
+                    'Unable to communicate with the HR server.'
+                );
+
             }
 
-            function renderVoidedTable(tbody) {
-                const voided = rawDataCache.voidedLogs || [];
-                if (voided.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-shield-check text-xl mb-2 block text-slate-300"></i><span>Audit log clear. No voided records found.</span></td></tr>`; return; }
-                voided.forEach(log => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50 transition-colors';
-                    tr.innerHTML = `<td class="px-6 py-4 font-bold text-slate-700 font-mono">${log.user_id}</td><td class="px-4 py-4 font-mono text-slate-500" colspan="2">${new Date(log.timestamp).toLocaleTimeString()}</td><td class="px-4 py-4 font-bold text-rose-600">${log.state}</td><td class="px-4 py-4 italic text-slate-500" colspan="2">Reason: ${log.void_reason || 'Admin Voided'}</td><td class="px-4 py-4"><span class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">VOIDED</span></td><td class="px-6 py-4 text-right text-slate-300">--</td>`;
-                    tbody.appendChild(tr);
-                });
+        }
+    );
+
+
+/* =========================================================
+USB IMPORT
+========================================================= */
+
+document
+    .getElementById(
+        'logfile'
+    )
+    .addEventListener(
+        'change',
+        () => {
+
+            if (
+                document.getElementById(
+                    'logfile'
+                ).files.length
+            ) {
+
+                document
+                    .getElementById(
+                        'usbSubmitBtn'
+                    )
+                    .click();
+
             }
 
-            function openLogsModal(userId) {
-                const emp = (rawDataCache.employees || []).find(e => e.userId === userId);
-                if (!emp) return;
-                const tbody = document.getElementById('logsTableBody');
-                tbody.innerHTML = '';
-                (emp.rawLogs || []).forEach(log => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50';
-                    tr.innerHTML = `<td class="px-4 py-3 text-slate-500">${new Date(log.timestamp).toLocaleTimeString()}</td><td class="px-4 py-3 font-bold text-slate-800">${log.state}</td><td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold">${log.status}</span></td><td class="px-4 py-3 text-right"><button onclick="voidPunch('${log.id}')" class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-600 border border-rose-200 text-rose-600 hover:text-white text-[10px] font-bold transition">Void Log</button></td>`;
-                    tbody.appendChild(tr);
-                });
-                document.getElementById('logsModal').classList.remove('hidden');
+        }
+    );
+
+document
+    .getElementById(
+        'usbForm'
+    )
+    .addEventListener(
+        'submit',
+        async e => {
+
+            e.preventDefault();
+
+            const file =
+                document.getElementById(
+                    'logfile'
+                ).files[0];
+
+            if (!file) return;
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                'logfile',
+                file
+            );
+
+            try {
+
+                const res =
+                    await fetch(
+                        '/api/upload-usb',
+                        {
+                            method:'POST',
+
+                            headers:{
+                                Authorization:
+                                    `Bearer ${authToken}`
+                            },
+
+                            body:
+                                formData
+                        }
+                    );
+
+                const data =
+                    await res.json();
+
+                if (!res.ok) {
+
+                    alert(
+                        data.error ||
+                        'USB import failed.'
+                    );
+
+                    return;
+                }
+
+                alert(
+                    data.message ||
+                    'USB import complete.'
+                );
+
+                document.getElementById(
+                    'logfile'
+                ).value = '';
+
+                await fetchDashboardData();
+
+            } catch {
+
+                alert(
+                    'USB import failed.'
+                );
+
             }
 
-            async function voidPunch(id) {
-                const reason = prompt("Enter mandatory audit reason for voiding this record:");
-                if (!reason) return;
-                try {
-                    const res = await fetch('/api/punch/void', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify({ id, reason }) });
-                    const result = await res.json();
-                    alert(result.message || 'Record voided successfully.');
-                    closeLogsModal();
-                    fetchDashboardData();
-                } catch (error) { alert('Unable to void punch record.'); }
+        }
+    );
+
+
+/* =========================================================
+DATE
+========================================================= */
+
+datePicker.addEventListener(
+    'change',
+    fetchDashboardData
+);
+
+
+/* =========================================================
+SOCKET LIVE REFRESH
+========================================================= */
+
+if (socket) {
+
+    socket.on(
+        'dataRefreshed',
+        () => {
+
+            fetchDashboardData();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+MODAL CLICK OUTSIDE
+========================================================= */
+
+document
+    .getElementById(
+        'manualModal'
+    )
+    .addEventListener(
+        'click',
+        e => {
+
+            if (
+                e.target.id ===
+                'manualModal'
+            ) {
+                closeManualModal();
             }
 
-            function openManualModal() { document.getElementById('manualDate').value = datePicker.value; document.getElementById('manualModal').classList.remove('hidden'); }
-            function closeManualModal() { document.getElementById('manualModal').classList.add('hidden'); }
-            function closeLogsModal() { document.getElementById('logsModal').classList.add('hidden'); }
+        }
+    );
 
-            document.getElementById('logfile').addEventListener('change', () => { document.getElementById('usbSubmitBtn').click(); });
-            document.getElementById('usbForm').addEventListener('submit', async e => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                try {
-                    const res = await fetch('/api/upload-usb', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData });
-                    const result = await res.json();
-                    alert(result.message || 'File uploaded.');
-                    fetchDashboardData();
-                } catch (error) { alert('USB import failed.'); }
-            });
+document
+    .getElementById(
+        'logsModal'
+    )
+    .addEventListener(
+        'click',
+        e => {
 
-            document.getElementById('manualPunchForm').addEventListener('submit', async e => {
-                e.preventDefault();
-                const payload = { userId: document.getElementById('manualEmpId').value, date: document.getElementById('manualDate').value, time: document.getElementById('manualTime').value, state: document.getElementById('manualState').value, reason: document.getElementById('manualReason').value };
-                try {
-                    const res = await fetch('/api/punch/manual', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` }, body: JSON.stringify(payload) });
-                    const result = await res.json();
-                    alert(result.message || 'Manual override recorded.');
-                    closeManualModal();
-                    fetchDashboardData();
-                } catch (error) { alert('Unable to save manual override.'); }
-            });
+            if (
+                e.target.id ===
+                'logsModal'
+            ) {
+                closeLogsModal();
+            }
 
-            datePicker.addEventListener('change', fetchDashboardData);
-            if (socket) socket.on('dataRefreshed', fetchDashboardData);
+        }
+    );
 
-            document.getElementById('manualModal').addEventListener('click', e => { if (e.target.id === 'manualModal') closeManualModal(); });
-            document.getElementById('logsModal').addEventListener('click', e => { if (e.target.id === 'logsModal') closeLogsModal(); });
-            document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeManualModal(); closeLogsModal(); } });
-        })();
-    </script>
+
+/* =========================================================
+ESCAPE
+========================================================= */
+
+document.addEventListener(
+    'keydown',
+    e => {
+
+        if (
+            e.key ===
+            'Escape'
+        ) {
+
+            closeManualModal();
+
+            closeLogsModal();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+HELPERS
+========================================================= */
+
+function formatDateTime(
+    timestamp
+) {
+
+    if (!timestamp) {
+        return '--';
+    }
+
+    return new Date(
+        timestamp
+    ).toLocaleString(
+        [],
+        {
+            month:'short',
+            day:'2-digit',
+            hour:'2-digit',
+            minute:'2-digit'
+        }
+    );
+}
+
+function escapeHTML(
+    value
+) {
+
+    return String(
+        value ?? ''
+    )
+    .replaceAll(
+        '&',
+        '&amp;'
+    )
+    .replaceAll(
+        '<',
+        '&lt;'
+    )
+    .replaceAll(
+        '>',
+        '&gt;'
+    )
+    .replaceAll(
+        '"',
+        '&quot;'
+    )
+    .replaceAll(
+        "'",
+        '&#039;'
+    );
+}
+
+function escapeAttribute(
+    value
+) {
+
+    return String(
+        value ?? ''
+    )
+    .replaceAll(
+        '\\',
+        '\\\\'
+    )
+    .replaceAll(
+        "'",
+        "\\'"
+    );
+}
+
+
+/* =========================================================
+EXPOSE FUNCTIONS
+========================================================= */
+
+window.showAuthSubForm =
+    showAuthSubForm;
+
+window.logoutHR =
+    logoutHR;
+
+window.switchTab =
+    switchTab;
+
+window.openManualModal =
+    openManualModal;
+
+window.closeManualModal =
+    closeManualModal;
+
+window.openLogsModal =
+    openLogsModal;
+
+window.closeLogsModal =
+    closeLogsModal;
+
+window.voidPunch =
+    voidPunch;
+
+window.loadHistory =
+    loadHistory;
+
+window.loadSystemActivity =
+    loadSystemActivity;
+
+</script>
+
 </body>
 </html>
-```
