@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
+const path = require('path');
+const multer = require('multer');
 const { Server } = require('socket.io');
 const { createClient } = require('@supabase/supabase-js');
-const multer = require('multer');
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,42 +13,52 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-const SUPABASE_URL =
-    process.env.SUPABASE_URL ||
-    'https://YOUR_PROJECT_REF.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const SUPABASE_ANON_KEY =
-    process.env.SUPABASE_ANON_KEY ||
-    'YOUR_SUPABASE_ANON_KEY';
+if (!SUPABASE_URL) {
+    throw new Error('Missing SUPABASE_URL in .env');
+}
 
-const SUPABASE_SERVICE_ROLE_KEY =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    'YOUR_SERVICE_ROLE_KEY';
+if (!SUPABASE_ANON_KEY) {
+    throw new Error('Missing SUPABASE_ANON_KEY in .env');
+}
+
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY in .env');
+}
 
 const supabasePublic = createClient(
     SUPABASE_URL,
-    SUPABASE_ANON_KEY
+    SUPABASE_ANON_KEY,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }
 );
 
 const supabaseAdmin = createClient(
     SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }
 );
 
-app.use(express.json());
+/* =========================================================
+   APP CONFIG
+========================================================= */
+
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-    express.static(
-        path.join(__dirname, 'public')
-    )
-);
-
-/*
-|--------------------------------------------------------------------------
-| FILE UPLOAD
-|--------------------------------------------------------------------------
-*/
+app.use(express.static(path.join(__dirname, 'public')));
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -55,56 +67,68 @@ const upload = multer({
     }
 });
 
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATION
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   BASIC HEALTH CHECK
+========================================================= */
+
+app.get('/api/health', async (req, res) => {
+    res.json({
+        ok: true,
+        service: 'Tikix HR Attendance',
+        time: new Date().toISOString()
+    });
+});
+
+/* =========================================================
+   AUTHENTICATION
+========================================================= */
 
 async function authenticateToken(req, res, next) {
     try {
-        const authHeader = req.headers.authorization;
+        const authHeader = req.headers.authorization || '';
 
-        const token =
-            authHeader &&
-            authHeader.startsWith('Bearer ')
-                ? authHeader.split(' ')[1]
-                : null;
+        if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                error: 'Authentication required.'
+            });
+        }
+
+        const token = authHeader.substring(7).trim();
 
         if (!token) {
             return res.status(401).json({
-                error: 'Access token required.'
+                error: 'Authentication token is missing.'
             });
         }
 
         const {
-            data: { user },
+            data,
             error
         } = await supabasePublic.auth.getUser(token);
 
-        if (error || !user) {
+        if (error || !data?.user) {
             return res.status(401).json({
-                error: 'Invalid or expired session.'
+                error: 'Your session has expired. Please sign in again.'
             });
         }
 
-        req.user = user;
+        req.user = data.user;
+        req.accessToken = token;
+
         next();
 
     } catch (error) {
-        console.error('Authentication error:', error);
+        console.error('[AUTH MIDDLEWARE]', error);
 
         return res.status(401).json({
-            error: 'Authentication failed.'
+            error: 'Unable to verify your session.'
         });
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| AUDIT LOGGER
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   AUDIT LOGGING
+========================================================= */
 
 async function recordAuditEvent({
     req = null,
@@ -116,963 +140,788 @@ async function recordAuditEvent({
     metadata = {}
 }) {
     try {
-        const currentActor =
-            actor ||
-            (req && req.user) ||
-            {};
+        const currentActor = actor || req?.user || {};
+
+        const payload = {
+            event_type: eventType,
+            actor_id: currentActor.id || null,
+            actor_email: currentActor.email || null,
+            employee_id: employeeId || null,
+            punch_id:
+                punchId !== null && punchId !== undefined
+                    ? String(punchId)
+                    : null,
+            description,
+            metadata: metadata || {}
+        };
 
         const { error } = await supabaseAdmin
             .from('audit_events')
-            .insert([
-                {
-                    event_type: eventType,
-                    actor_id: currentActor.id || null,
-                    actor_email: currentActor.email || null,
-                    employee_id:
-                        employeeId !== null
-                            ? String(employeeId)
-                            : null,
-                    punch_id:
-                        punchId !== null
-                            ? String(punchId)
-                            : null,
-                    description,
-                    metadata
-                }
-            ]);
+            .insert([payload]);
 
         if (error) {
-            console.error(
-                'Audit insert error:',
-                error
-            );
+            console.error('[AUDIT]', error.message);
         }
 
     } catch (error) {
-        console.error(
-            'Audit logger exception:',
+        console.error('[AUDIT EXCEPTION]', error.message);
+    }
+}
+
+/* =========================================================
+   AUTH - REGISTER
+========================================================= */
+
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const {
+            fullName,
+            companyName,
+            email,
+            password
+        } = req.body || {};
+
+        if (!fullName || !companyName || !email || !password) {
+            return res.status(400).json({
+                error: 'Full name, company, email and password are required.'
+            });
+        }
+
+        if (String(password).length < 6) {
+            return res.status(400).json({
+                error: 'Password must contain at least 6 characters.'
+            });
+        }
+
+        const cleanEmail = String(email)
+            .trim()
+            .toLowerCase();
+
+        const {
+            data,
             error
-        );
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| UTILITY FUNCTIONS
-|--------------------------------------------------------------------------
-*/
-
-function round(value, decimals = 2) {
-    const multiplier =
-        Math.pow(10, decimals);
-
-    return (
-        Math.round(
-            (Number(value) || 0) *
-            multiplier
-        ) / multiplier
-    );
-}
-
-function formatDateOnly(date) {
-    return date
-        .toISOString()
-        .split('T')[0];
-}
-
-function getDateRange(dateString) {
-    const start = new Date(
-        `${dateString}T00:00:00.000Z`
-    );
-
-    const end = new Date(
-        `${dateString}T23:59:59.999Z`
-    );
-
-    return {
-        start: start.toISOString(),
-        end: end.toISOString()
-    };
-}
-
-function timeToMinutes(value) {
-    if (!value) return null;
-
-    const match =
-        String(value).match(
-            /(\d{1,2}):(\d{2})/
-        );
-
-    if (!match) return null;
-
-    return (
-        Number(match[1]) * 60 +
-        Number(match[2])
-    );
-}
-
-function timestampToTime(timestamp) {
-    if (!timestamp) return '--';
-
-    return new Date(timestamp)
-        .toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
+        } = await supabaseAdmin.auth.admin.createUser({
+            email: cleanEmail,
+            password: String(password),
+            email_confirm: true,
+            user_metadata: {
+                fullName: String(fullName).trim(),
+                companyName: String(companyName).trim(),
+                role: 'hr_admin'
+            }
         });
-}
 
-function timestampToDate(timestamp) {
-    if (!timestamp) return '--';
+        if (error) {
+            console.error('[REGISTER]', error);
 
-    return new Date(timestamp)
-        .toLocaleDateString([], {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit'
-        });
-}
-
-/*
-|--------------------------------------------------------------------------
-| AUTH - REGISTER
-|--------------------------------------------------------------------------
-*/
-
-app.post(
-    '/api/auth/register',
-    async (req, res) => {
-        try {
-            const {
-                fullName,
-                companyName,
-                email,
-                password
-            } = req.body;
-
-            if (
-                !fullName ||
-                !companyName ||
-                !email ||
-                !password
-            ) {
-                return res.status(400).json({
-                    error:
-                        'All registration fields are required.'
-                });
-            }
-
-            if (password.length < 6) {
-                return res.status(400).json({
-                    error:
-                        'Password must be at least 6 characters.'
-                });
-            }
-
-            const {
-                data,
-                error
-            } =
-                await supabaseAdmin.auth.admin.createUser(
-                    {
-                        email,
-                        password,
-                        email_confirm: true,
-                        user_metadata: {
-                            full_name: fullName,
-                            company_name: companyName,
-                            role: 'hr_admin'
-                        }
-                    }
-                );
-
-            if (error) {
-                return res.status(400).json({
-                    error: error.message
-                });
-            }
-
-            await recordAuditEvent({
-                actor: data.user,
-                eventType:
-                    'ADMIN_REGISTERED',
-                description:
-                    `Administrator account created for ${email}.`,
-                metadata: {
-                    companyName
-                }
-            });
-
-            return res.json({
-                message:
-                    'Administrator account created successfully.'
-            });
-
-        } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                error:
-                    'Unable to create administrator account.'
+            return res.status(400).json({
+                error: error.message
             });
         }
-    }
-);
 
-/*
-|--------------------------------------------------------------------------
-| AUTH - LOGIN
-|--------------------------------------------------------------------------
-*/
-
-app.post(
-    '/api/auth/login',
-    async (req, res) => {
-        try {
-            const {
-                email,
-                password
-            } = req.body;
-
-            if (!email || !password) {
-                return res.status(400).json({
-                    error:
-                        'Email and password are required.'
-                });
-            }
-
-            const {
-                data,
-                error
-            } =
-                await supabasePublic.auth.signInWithPassword(
-                    {
-                        email,
-                        password
-                    }
-                );
-
-            if (
-                error ||
-                !data.session ||
-                !data.user
-            ) {
-                return res.status(401).json({
-                    error:
-                        error?.message ||
-                        'Invalid login credentials.'
-                });
-            }
-
-            await recordAuditEvent({
-                actor: data.user,
-                eventType: 'LOGIN',
-                description:
-                    `Administrator ${email} signed in.`,
-                metadata: {
-                    loginMethod:
-                        'password'
-                }
-            });
-
-            return res.json({
-                token:
-                    data.session.access_token,
-
-                user: {
-                    id: data.user.id,
-                    email: data.user.email,
-                    fullName:
-                        data.user.user_metadata
-                            ?.full_name ||
-                        '',
-                    companyName:
-                        data.user.user_metadata
-                            ?.company_name ||
-                        '',
-                    role:
-                        data.user.user_metadata
-                            ?.role ||
-                        'hr_admin'
-                }
-            });
-
-        } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                error:
-                    'Authentication service unavailable.'
+        if (!data?.user) {
+            return res.status(500).json({
+                error: 'Administrator account could not be created.'
             });
         }
-    }
-);
 
-/*
-|--------------------------------------------------------------------------
-| AUTH - LOGOUT
-|--------------------------------------------------------------------------
-*/
+        await recordAuditEvent({
+            actor: data.user,
+            eventType: 'ADMIN_REGISTERED',
+            description: `Administrator account created for ${cleanEmail}.`,
+            metadata: {
+                companyName: String(companyName).trim()
+            }
+        });
+
+        return res.status(201).json({
+            message:
+                'Administrator account created successfully. You can now sign in.',
+            user: {
+                id: data.user.id,
+                email: data.user.email
+            }
+        });
+
+    } catch (error) {
+        console.error('[REGISTER EXCEPTION]', error);
+
+        return res.status(500).json({
+            error: 'Registration service failed.',
+            details: error.message
+        });
+    }
+});
+
+/* =========================================================
+   AUTH - LOGIN
+========================================================= */
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const {
+            email,
+            password
+        } = req.body || {};
+
+        if (!email || !password) {
+            return res.status(400).json({
+                error: 'Email and password are required.'
+            });
+        }
+
+        const cleanEmail = String(email)
+            .trim()
+            .toLowerCase();
+
+        console.log(`[AUTH] Login attempt: ${cleanEmail}`);
+
+        const {
+            data,
+            error
+        } = await supabasePublic.auth.signInWithPassword({
+            email: cleanEmail,
+            password: String(password)
+        });
+
+        if (error) {
+            console.error(
+                `[AUTH] Login failed for ${cleanEmail}:`,
+                error.message
+            );
+
+            return res.status(401).json({
+                error: error.message
+            });
+        }
+
+        if (!data?.session || !data?.user) {
+            return res.status(401).json({
+                error: 'Authentication succeeded but no session was created.'
+            });
+        }
+
+        console.log(`[AUTH] Login successful: ${cleanEmail}`);
+
+        await recordAuditEvent({
+            actor: data.user,
+            eventType: 'LOGIN',
+            description: `Administrator ${cleanEmail} signed in.`,
+            metadata: {
+                login_method: 'password'
+            }
+        });
+
+        return res.status(200).json({
+            token: data.session.access_token,
+
+            user: {
+                id: data.user.id,
+                email: data.user.email,
+
+                fullName:
+                    data.user.user_metadata?.fullName ||
+                    data.user.user_metadata?.full_name ||
+                    '',
+
+                companyName:
+                    data.user.user_metadata?.companyName ||
+                    data.user.user_metadata?.company_name ||
+                    '',
+
+                role:
+                    data.user.user_metadata?.role ||
+                    'hr_admin'
+            }
+        });
+
+    } catch (error) {
+        console.error('[LOGIN EXCEPTION]', error);
+
+        return res.status(500).json({
+            error: 'Tikix authentication service failed.',
+            details: error.message
+        });
+    }
+});
+
+/* =========================================================
+   AUTH - FORGOT PASSWORD
+========================================================= */
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body || {};
+
+        if (!email) {
+            return res.status(400).json({
+                error: 'Email address is required.'
+            });
+        }
+
+        const cleanEmail = String(email)
+            .trim()
+            .toLowerCase();
+
+        const origin =
+            process.env.APP_URL ||
+            `${req.protocol}://${req.get('host')}`;
+
+        const redirectTo =
+            `${origin}/reset-password.html`;
+
+        const { error } =
+            await supabasePublic.auth.resetPasswordForEmail(
+                cleanEmail,
+                {
+                    redirectTo
+                }
+            );
+
+        if (error) {
+            console.error('[PASSWORD RESET]', error);
+
+            return res.status(400).json({
+                error: error.message
+            });
+        }
+
+        return res.json({
+            message:
+                'If this email is registered, password recovery instructions have been sent.'
+        });
+
+    } catch (error) {
+        console.error('[PASSWORD RESET EXCEPTION]', error);
+
+        return res.status(500).json({
+            error: 'Unable to process password recovery.'
+        });
+    }
+});
+
+/* =========================================================
+   AUTH - LOGOUT
+========================================================= */
 
 app.post(
     '/api/auth/logout',
     authenticateToken,
     async (req, res) => {
-        await recordAuditEvent({
-            req,
-            eventType: 'LOGOUT',
-            description:
-                `Administrator ${req.user.email} signed out.`,
-            metadata: {}
-        });
-
-        res.json({
-            message: 'Logout recorded.'
-        });
-    }
-);
-
-/*
-|--------------------------------------------------------------------------
-| AUTH - PASSWORD RESET
-|--------------------------------------------------------------------------
-*/
-
-app.post(
-    '/api/auth/forgot-password',
-    async (req, res) => {
         try {
-            const { email } = req.body;
+            await recordAuditEvent({
+                req,
+                eventType: 'LOGOUT',
+                description:
+                    `Administrator ${req.user.email || 'unknown'} signed out.`
+            });
 
-            if (!email) {
-                return res.status(400).json({
-                    error:
-                        'Email address is required.'
-                });
-            }
-
-            const {
-                error
-            } =
-                await supabasePublic.auth.resetPasswordForEmail(
-                    email
-                );
-
-            if (error) {
-                return res.status(400).json({
-                    error: error.message
-                });
-            }
-
-            return res.json({
-                message:
-                    'Password recovery instructions have been sent.'
+            res.json({
+                message: 'Signed out successfully.'
             });
 
         } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                error:
-                    'Unable to process password recovery.'
+            res.json({
+                message: 'Signed out.'
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| HR ANALYTICS
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+function getDateRange(dateString) {
+    const date =
+        /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+            ? dateString
+            : new Date().toISOString().slice(0, 10);
+
+    const start = `${date}T00:00:00.000Z`;
+    const end = `${date}T23:59:59.999Z`;
+
+    return {
+        date,
+        start,
+        end
+    };
+}
+
+function minutesBetween(start, end) {
+    if (!start || !end) return 0;
+
+    const a = new Date(start).getTime();
+    const b = new Date(end).getTime();
+
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+        return 0;
+    }
+
+    return Math.max(0, Math.round((b - a) / 60000));
+}
+
+function formatHours(minutes) {
+    return (minutes / 60).toFixed(2);
+}
+
+function getLocalMinutes(timestamp) {
+    const d = new Date(timestamp);
+
+    if (Number.isNaN(d.getTime())) {
+        return null;
+    }
+
+    return d.getHours() * 60 + d.getMinutes();
+}
+
+/* =========================================================
+   PUNCH STATE LOGIC
+========================================================= */
+
+function calculateEmployee(logs) {
+    const validLogs = logs
+        .filter(log => String(log.status).toUpperCase() !== 'VOIDED')
+        .sort(
+            (a, b) =>
+                new Date(a.timestamp) -
+                new Date(b.timestamp)
+        );
+
+    if (!validLogs.length) {
+        return null;
+    }
+
+    const timeInLog =
+        validLogs.find(
+            log =>
+                String(log.state).toLowerCase() ===
+                'time-in'
+        ) || null;
+
+    const timeOutLogs =
+        validLogs.filter(
+            log =>
+                String(log.state).toLowerCase() ===
+                'time-out'
+        );
+
+    const timeOutLog =
+        timeOutLogs.length
+            ? timeOutLogs[timeOutLogs.length - 1]
+            : null;
+
+    const latestLog =
+        validLogs[validLogs.length - 1];
+
+    const latestState =
+        String(latestLog.state || '').toLowerCase();
+
+    let currentState = 'OFF DUTY';
+    let isActive = false;
+
+    if (
+        latestState === 'time-in' ||
+        latestState === 'break-in' ||
+        latestState === 'overtime-in'
+    ) {
+        isActive = true;
+        currentState = 'ON DUTY';
+    }
+
+    if (latestState === 'break-out') {
+        isActive = true;
+        currentState = 'ON BREAK';
+    }
+
+    if (
+        latestState === 'time-out' ||
+        latestState === 'overtime-out'
+    ) {
+        isActive = false;
+        currentState = 'OFF DUTY';
+    }
+
+    let breakMinutes = 0;
+    let breakOut = null;
+
+    for (const log of validLogs) {
+        const state =
+            String(log.state || '').toLowerCase();
+
+        if (state === 'break-out') {
+            breakOut = log;
+        }
+
+        if (
+            state === 'break-in' &&
+            breakOut
+        ) {
+            breakMinutes += minutesBetween(
+                breakOut.timestamp,
+                log.timestamp
+            );
+
+            breakOut = null;
+        }
+    }
+
+    let workedMinutes = 0;
+
+    if (timeInLog) {
+        const endTimestamp =
+            timeOutLog?.timestamp ||
+            new Date().toISOString();
+
+        workedMinutes =
+            minutesBetween(
+                timeInLog.timestamp,
+                endTimestamp
+            );
+
+        workedMinutes =
+            Math.max(
+                0,
+                workedMinutes - breakMinutes
+            );
+    }
+
+    const overtimeMinutes =
+        Math.max(
+            0,
+            workedMinutes - 8 * 60
+        );
+
+    const arrivalMinutes =
+        timeInLog
+            ? getLocalMinutes(timeInLog.timestamp)
+            : null;
+
+    const scheduledStartMinutes = 9 * 60;
+
+    const minutesLate =
+        arrivalMinutes !== null
+            ? Math.max(
+                0,
+                arrivalMinutes -
+                    scheduledStartMinutes
+            )
+            : 0;
+
+    const isLate =
+        minutesLate > 0;
+
+    const manual =
+        validLogs.some(
+            log => Boolean(log.is_manual)
+        );
+
+    return {
+        userId: logs[0].user_id,
+
+        timeIn: timeInLog
+            ? new Date(
+                timeInLog.timestamp
+            ).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : null,
+
+        timeOut: timeOutLog
+            ? new Date(
+                timeOutLog.timestamp
+            ).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : null,
+
+        breakMinutes,
+
+        netWorkHours:
+            formatHours(workedMinutes),
+
+        overtimeHours:
+            formatHours(overtimeMinutes),
+
+        overtimeMinutes,
+
+        isLate,
+
+        minutesLate,
+
+        status:
+            latestLog.state || 'Unknown',
+
+        currentState,
+
+        isActive,
+
+        isEdited: manual,
+
+        punchCount:
+            validLogs.length,
+
+        lastActivity:
+            latestLog.timestamp,
+
+        rawLogs: validLogs
+    };
+}
+
+/* =========================================================
+   HR ANALYTICS
+========================================================= */
 
 app.get(
     '/api/hr-analytics',
     authenticateToken,
     async (req, res) => {
         try {
-            const selectedDate =
-                req.query.date ||
-                formatDateOnly(new Date());
-
             const {
+                date,
                 start,
                 end
-            } =
-                getDateRange(
-                    selectedDate
-                );
+            } = getDateRange(req.query.date);
 
             const {
                 data: logs,
                 error
-            } =
-                await supabaseAdmin
-                    .from('punch_logs')
-                    .select('*')
-                    .gte(
-                        'timestamp',
-                        start
-                    )
-                    .lte(
-                        'timestamp',
-                        end
-                    )
-                    .order(
-                        'timestamp',
-                        {
-                            ascending: true
-                        }
-                    );
+            } = await supabaseAdmin
+                .from('punch_logs')
+                .select('*')
+                .gte(
+                    'timestamp',
+                    start
+                )
+                .lte(
+                    'timestamp',
+                    end
+                )
+                .order(
+                    'timestamp',
+                    {
+                        ascending: true
+                    }
+                );
 
             if (error) {
-                throw error;
+                console.error(
+                    '[ANALYTICS]',
+                    error
+                );
+
+                return res.status(500).json({
+                    error:
+                        'Unable to load attendance data.',
+                    details:
+                        error.message
+                });
             }
 
+            const allLogs =
+                Array.isArray(logs)
+                    ? logs
+                    : [];
+
             const validLogs =
-                (logs || []).filter(
+                allLogs.filter(
                     log =>
                         String(
-                            log.status ||
-                            'VALID'
+                            log.status
                         ).toUpperCase() !==
                         'VOIDED'
                 );
 
             const voidedLogs =
-                (logs || []).filter(
+                allLogs.filter(
                     log =>
                         String(
-                            log.status ||
-                            ''
+                            log.status
                         ).toUpperCase() ===
                         'VOIDED'
                 );
 
-            /*
-            -------------------------------------------------------
-            GROUP LOGS BY EMPLOYEE
-            -------------------------------------------------------
-            */
+            const employeeMap = new Map();
 
-            const grouped = {};
-
-            validLogs.forEach(log => {
-                const id =
-                    String(log.user_id);
-
-                if (!grouped[id]) {
-                    grouped[id] = [];
+            for (const log of validLogs) {
+                if (!employeeMap.has(log.user_id)) {
+                    employeeMap.set(
+                        log.user_id,
+                        []
+                    );
                 }
 
-                grouped[id].push(log);
-            });
+                employeeMap
+                    .get(log.user_id)
+                    .push(log);
+            }
 
-            const now = new Date();
+            const employees = [];
 
-            const employees =
-                Object.entries(
-                    grouped
-                ).map(
-                    ([userId, employeeLogs]) => {
+            for (const [
+                userId,
+                employeeLogs
+            ] of employeeMap.entries()) {
+                const employee =
+                    calculateEmployee(
+                        employeeLogs
+                    );
 
-                        employeeLogs.sort(
-                            (a, b) =>
-                                new Date(a.timestamp) -
-                                new Date(b.timestamp)
-                        );
+                if (employee) {
+                    employees.push(
+                        employee
+                    );
+                }
+            }
 
-                        const firstTimeIn =
-                            employeeLogs.find(
-                                log =>
-                                    log.state ===
-                                    'Time-In'
-                            );
-
-                        const timeOutLogs =
-                            employeeLogs.filter(
-                                log =>
-                                    log.state ===
-                                    'Time-Out'
-                            );
-
-                        const lastTimeOut =
-                            timeOutLogs.length
-                                ? timeOutLogs[
-                                      timeOutLogs.length -
-                                          1
-                                  ]
-                                : null;
-
-                        const lastLog =
-                            employeeLogs[
-                                employeeLogs.length -
-                                    1
-                            ];
-
-                        /*
-                        ------------------------------------------------
-                        CURRENT STATE
-                        ------------------------------------------------
-                        */
-
-                        let currentState =
-                            'OFF DUTY';
-
-                        if (
-                            lastLog.state ===
-                                'Time-In' ||
-                            lastLog.state ===
-                                'Break-In' ||
-                            lastLog.state ===
-                                'Overtime-In'
-                        ) {
-                            currentState =
-                                'ON DUTY';
-                        }
-
-                        if (
-                            lastLog.state ===
-                            'Break-Out'
-                        ) {
-                            currentState =
-                                'ON BREAK';
-                        }
-
-                        if (
-                            lastLog.state ===
-                                'Time-Out' ||
-                            lastLog.state ===
-                                'Overtime-Out'
-                        ) {
-                            currentState =
-                                'OFF DUTY';
-                        }
-
-                        const isActive =
-                            currentState ===
-                                'ON DUTY' ||
-                            currentState ===
-                                'ON BREAK';
-
-                        /*
-                        ------------------------------------------------
-                        LATE CALCULATION
-                        ------------------------------------------------
-                        */
-
-                        let minutesLate = 0;
-
-                        if (firstTimeIn) {
-                            const d =
-                                new Date(
-                                    firstTimeIn.timestamp
-                                );
-
-                            const actualMinutes =
-                                d.getHours() *
-                                    60 +
-                                d.getMinutes();
-
-                            const scheduledMinutes =
-                                9 * 60;
-
-                            if (
-                                actualMinutes >
-                                scheduledMinutes
-                            ) {
-                                minutesLate =
-                                    actualMinutes -
-                                    scheduledMinutes;
-                            }
-                        }
-
-                        /*
-                        ------------------------------------------------
-                        BREAK CALCULATION
-                        ------------------------------------------------
-                        */
-
-                        let breakMinutes = 0;
-                        let openBreak = null;
-
-                        employeeLogs.forEach(
-                            log => {
-                                if (
-                                    log.state ===
-                                    'Break-Out'
-                                ) {
-                                    openBreak =
-                                        new Date(
-                                            log.timestamp
-                                        );
-                                }
-
-                                if (
-                                    log.state ===
-                                        'Break-In' &&
-                                    openBreak
-                                ) {
-                                    const breakEnd =
-                                        new Date(
-                                            log.timestamp
-                                        );
-
-                                    const diff =
-                                        (
-                                            breakEnd -
-                                            openBreak
-                                        ) /
-                                        60000;
-
-                                    if (
-                                        diff > 0 &&
-                                        diff < 1440
-                                    ) {
-                                        breakMinutes +=
-                                            diff;
-                                    }
-
-                                    openBreak = null;
-                                }
-                            }
-                        );
-
-                        /*
-                        ------------------------------------------------
-                        WORK HOURS
-                        ------------------------------------------------
-                        */
-
-                        let endTime =
-                            lastTimeOut
-                                ? new Date(
-                                      lastTimeOut.timestamp
-                                  )
-                                : isActive
-                                ? now
-                                : null;
-
-                        let netWorkHours = 0;
-
-                        if (
-                            firstTimeIn &&
-                            endTime
-                        ) {
-                            const startTime =
-                                new Date(
-                                    firstTimeIn.timestamp
-                                );
-
-                            const elapsedHours =
-                                (
-                                    endTime -
-                                    startTime
-                                ) /
-                                3600000;
-
-                            netWorkHours =
-                                Math.max(
-                                    0,
-                                    elapsedHours -
-                                        breakMinutes /
-                                            60
-                                );
-                        }
-
-                        netWorkHours =
-                            round(
-                                netWorkHours
-                            );
-
-                        /*
-                        ------------------------------------------------
-                        OVERTIME
-                        ------------------------------------------------
-                        */
-
-                        const overtimeHours =
-                            round(
-                                Math.max(
-                                    0,
-                                    netWorkHours -
-                                        8
-                                )
-                            );
-
-                        /*
-                        ------------------------------------------------
-                        MANUAL EDIT
-                        ------------------------------------------------
-                        */
-
-                        const isEdited =
-                            employeeLogs.some(
-                                log =>
-                                    log.is_manual ===
-                                    true
-                            );
-
-                        /*
-                        ------------------------------------------------
-                        DATA SOURCE
-                        ------------------------------------------------
-                        */
-
-                        let dataSource =
-                            'Biometric Terminal';
-
-                        if (isEdited) {
-                            dataSource =
-                                'Manual Override';
-                        } else if (
-                            employeeLogs.some(
-                                log =>
-                                    log.source ===
-                                    'USB'
-                            )
-                        ) {
-                            dataSource =
-                                'USB Import';
-                        }
-
-                        return {
-                            userId,
-
-                            timeIn:
-                                firstTimeIn
-                                    ? timestampToTime(
-                                          firstTimeIn.timestamp
-                                      )
-                                    : '--',
-
-                            timeOut:
-                                lastTimeOut
-                                    ? timestampToTime(
-                                          lastTimeOut.timestamp
-                                      )
-                                    : '--',
-
-                            breakMinutes:
-                                Math.round(
-                                    breakMinutes
-                                ),
-
-                            netWorkHours,
-
-                            overtimeHours,
-
-                            minutesLate,
-
-                            isLate:
-                                minutesLate > 0,
-
-                            status:
-                                currentState,
-
-                            currentState,
-
-                            isActive,
-
-                            isEdited,
-
-                            dataSource,
-
-                            punchCount:
-                                employeeLogs.length,
-
-                            lastActivity:
-                                lastLog
-                                    ? lastLog.timestamp
-                                    : null,
-
-                            rawLogs:
-                                employeeLogs
-                        };
-                    }
+            const activeEmployees =
+                employees.filter(
+                    employee =>
+                        employee.isActive
                 );
 
-            /*
-            -------------------------------------------------------
-            STATS
-            -------------------------------------------------------
-            */
-
-            const totalHeadcount =
-                employees.length;
-
-            const currentlyActive =
+            const lateEmployees =
                 employees.filter(
-                    e => e.isActive
-                ).length;
+                    employee =>
+                        employee.isLate
+                );
 
-            const lateArrivals =
+            const overtimeEmployees =
                 employees.filter(
-                    e => e.isLate
-                ).length;
-
-            const overtimeWorkers =
-                employees.filter(
-                    e =>
+                    employee =>
                         Number(
-                            e.overtimeHours
+                            employee.overtimeHours
                         ) > 0
-                ).length;
+                );
 
-            const totalOT =
+            const totalWorkedMinutes =
                 employees.reduce(
-                    (sum, e) =>
+                    (sum, employee) =>
                         sum +
-                        Number(
-                            e.overtimeHours ||
-                                0
+                        Math.round(
+                            Number(
+                                employee.netWorkHours
+                            ) * 60
                         ),
                     0
                 );
 
-            const workedEmployees =
-                employees.filter(
-                    e =>
+            const averageWorkHours =
+                employees.length
+                    ? (
+                        totalWorkedMinutes /
+                        60 /
+                        employees.length
+                    ).toFixed(2)
+                    : '0.00';
+
+            const totalOTMinutes =
+                employees.reduce(
+                    (sum, employee) =>
+                        sum +
                         Number(
-                            e.netWorkHours
-                        ) > 0
+                            employee.overtimeMinutes ||
+                            0
+                        ),
+                    0
                 );
 
-            const averageWorkHours =
-                workedEmployees.length
-                    ? workedEmployees.reduce(
-                          (sum, e) =>
-                              sum +
-                              Number(
-                                  e.netWorkHours
-                              ),
-                          0
-                      ) /
-                      workedEmployees.length
-                    : 0;
-
             const punctualityRate =
-                totalHeadcount
-                    ? (
-                          (
-                              totalHeadcount -
-                              lateArrivals
-                          ) /
-                          totalHeadcount
-                      ) *
-                      100
+                employees.length
+                    ? Math.round(
+                        (
+                            (
+                                employees.length -
+                                lateEmployees.length
+                            ) /
+                            employees.length
+                        ) * 100
+                    )
                     : 100;
 
-            /*
-            -------------------------------------------------------
-            ACTIVITY FOR SELECTED DAY
-            -------------------------------------------------------
-            */
-
-            const {
-                data: activity
-            } =
-                await supabaseAdmin
-                    .from('audit_events')
-                    .select('*')
-                    .gte(
-                        'created_at',
-                        start
-                    )
-                    .lte(
-                        'created_at',
-                        end
-                    )
-                    .order(
-                        'created_at',
-                        {
-                            ascending: false
-                        }
-                    )
-                    .limit(100);
-
-            res.json({
-                selectedDate,
+            return res.json({
+                date,
 
                 stats: {
-                    totalHeadcount,
-                    currentlyActive,
-                    lateArrivals,
-                    punctualityRate:
-                        round(
-                            punctualityRate,
-                            1
-                        ),
+                    totalHeadcount:
+                        employees.length,
+
+                    currentlyActive:
+                        activeEmployees.length,
+
+                    lateArrivals:
+                        lateEmployees.length,
+
+                    overtimeWorkers:
+                        overtimeEmployees.length,
+
+                    punctualityRate,
+
                     totalOTAccumulated:
-                        round(totalOT),
-                    overtimeWorkers,
-                    averageWorkHours:
-                        round(
-                            averageWorkHours
-                        )
+                        formatHours(
+                            totalOTMinutes
+                        ),
+
+                    averageWorkHours
                 },
 
                 employees,
 
-                voidedLogs,
-
-                activity:
-                    activity || []
+                voidedLogs
             });
 
         } catch (error) {
             console.error(
-                'HR analytics error:',
+                '[ANALYTICS EXCEPTION]',
                 error
             );
 
-            res.status(500).json({
+            return res.status(500).json({
                 error:
-                    'Unable to load HR analytics.'
+                    'Attendance analytics failed.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| ATTENDANCE HISTORY
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   ATTENDANCE HISTORY
+========================================================= */
 
 app.get(
     '/api/hr-history',
     authenticateToken,
     async (req, res) => {
         try {
+            const employee =
+                String(
+                    req.query.employee || ''
+                ).trim();
+
             const from =
-                req.query.from ||
-                formatDateOnly(
-                    new Date(
+                /^\d{4}-\d{2}-\d{2}$/.test(
+                    req.query.from || ''
+                )
+                    ? req.query.from
+                    : new Date(
                         Date.now() -
-                            30 *
-                                86400000
+                        30 * 86400000
                     )
-                );
+                        .toISOString()
+                        .slice(0, 10);
 
             const to =
-                req.query.to ||
-                formatDateOnly(
-                    new Date()
-                );
-
-            const employee =
-                req.query.employee ||
-                '';
-
-            const {
-                start
-            } =
-                getDateRange(from);
-
-            const {
-                end
-            } =
-                getDateRange(to);
+                /^\d{4}-\d{2}-\d{2}$/.test(
+                    req.query.to || ''
+                )
+                    ? req.query.to
+                    : new Date()
+                        .toISOString()
+                        .slice(0, 10);
 
             let query =
                 supabaseAdmin
@@ -1080,11 +929,11 @@ app.get(
                     .select('*')
                     .gte(
                         'timestamp',
-                        start
+                        `${from}T00:00:00.000Z`
                     )
                     .lte(
                         'timestamp',
-                        end
+                        `${to}T23:59:59.999Z`
                     )
                     .order(
                         'timestamp',
@@ -1108,35 +957,34 @@ app.get(
             } = await query;
 
             if (error) {
-                throw error;
+                return res.status(500).json({
+                    error:
+                        'Unable to load attendance history.',
+                    details:
+                        error.message
+                });
             }
 
             res.json({
                 from,
                 to,
-                records:
-                    data || []
+                records: data || []
             });
 
         } catch (error) {
-            console.error(
-                'History error:',
-                error
-            );
-
             res.status(500).json({
                 error:
-                    'Unable to load attendance history.'
+                    'Attendance history failed.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| SYSTEM ACTIVITY
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   SYSTEM ACTIVITY
+========================================================= */
 
 app.get(
     '/api/system-activity',
@@ -1144,8 +992,9 @@ app.get(
     async (req, res) => {
         try {
             const limit = Math.min(
-                Number(
-                    req.query.limit || 200
+                Math.max(
+                    Number(req.query.limit) || 100,
+                    1
                 ),
                 500
             );
@@ -1166,7 +1015,9 @@ app.get(
                 query =
                     query.eq(
                         'event_type',
-                        req.query.type
+                        String(
+                            req.query.type
+                        )
                     );
             }
 
@@ -1176,33 +1027,32 @@ app.get(
             } = await query;
 
             if (error) {
-                throw error;
+                return res.status(500).json({
+                    error:
+                        'Unable to load system activity.',
+                    details:
+                        error.message
+                });
             }
 
             res.json({
-                activity:
-                    data || []
+                events: data || []
             });
 
         } catch (error) {
-            console.error(
-                'Activity error:',
-                error
-            );
-
             res.status(500).json({
                 error:
-                    'Unable to load system activity.'
+                    'System activity failed.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| MANUAL PUNCH
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   MANUAL PUNCH
+========================================================= */
 
 app.post(
     '/api/punch/manual',
@@ -1215,7 +1065,7 @@ app.post(
                 time,
                 state,
                 reason
-            } = req.body;
+            } = req.body || {};
 
             if (
                 !userId ||
@@ -1226,82 +1076,117 @@ app.post(
             ) {
                 return res.status(400).json({
                     error:
-                        'Employee, date, time, state and reason are required.'
+                        'Employee ID, date, time, state and reason are required.'
+                });
+            }
+
+            if (
+                !/^\d{4}-\d{2}-\d{2}$/.test(
+                    date
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        'Invalid date format.'
+                });
+            }
+
+            if (
+                !/^\d{2}:\d{2}$/.test(
+                    time
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        'Invalid time format.'
                 });
             }
 
             const timestamp =
-                `${date}T${time}:00Z`;
+                `${date}T${time}:00.000Z`;
 
             const {
                 data,
                 error
-            } =
-                await supabaseAdmin
-                    .from('punch_logs')
-                    .insert([
-                        {
-                            user_id: userId,
-                            timestamp,
-                            state,
-                            status: 'VALID',
-                            is_manual: true,
-                            override_reason:
-                                reason,
-                            source: 'MANUAL'
-                        }
-                    ])
-                    .select()
-                    .single();
+            } = await supabaseAdmin
+                .from('punch_logs')
+                .insert([
+                    {
+                        user_id:
+                            String(userId).trim(),
+                        timestamp,
+                        state:
+                            String(state).trim(),
+                        status: 'VALID',
+                        is_manual: true,
+                        override_reason:
+                            String(reason).trim()
+                    }
+                ])
+                .select()
+                .single();
 
             if (error) {
-                throw error;
+                console.error(
+                    '[MANUAL PUNCH]',
+                    error
+                );
+
+                return res.status(500).json({
+                    error:
+                        'Unable to create manual punch.',
+                    details:
+                        error.message
+                });
             }
 
             await recordAuditEvent({
                 req,
                 eventType:
                     'MANUAL_OVERRIDE',
-                employeeId: userId,
-                punchId: data?.id,
+                employeeId:
+                    String(userId).trim(),
+                punchId:
+                    data.id,
                 description:
-                    `Manual ${state} punch created for ${userId}.`,
+                    `Manual ${state} recorded for ${userId}.`,
                 metadata: {
-                    state,
                     timestamp,
-                    reason
+                    state,
+                    reason:
+                        String(
+                            reason
+                        ).trim()
                 }
             });
 
-            io.emit(
-                'dataRefreshed'
-            );
+            io.emit('dataRefreshed');
 
-            res.json({
+            res.status(201).json({
                 message:
-                    'Manual attendance record created successfully.',
+                    'Manual attendance record saved.',
                 record: data
             });
 
         } catch (error) {
             console.error(
-                'Manual punch error:',
+                '[MANUAL PUNCH EXCEPTION]',
                 error
             );
 
             res.status(500).json({
                 error:
-                    'Unable to create manual punch.'
+                    'Manual override failed.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| VOID PUNCH
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   VOID PUNCH
+========================================================= */
 
 app.post(
     '/api/punch/void',
@@ -1311,65 +1196,73 @@ app.post(
             const {
                 id,
                 reason
-            } = req.body;
+            } = req.body || {};
 
-            if (!id || !reason) {
+            if (
+                id === undefined ||
+                id === null ||
+                !reason
+            ) {
                 return res.status(400).json({
                     error:
-                        'Punch ID and void reason are required.'
+                        'Punch ID and audit reason are required.'
                 });
             }
 
             const {
                 data: original,
-                error: fetchError
-            } =
-                await supabaseAdmin
-                    .from('punch_logs')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
+                error:
+                    fetchError
+            } = await supabaseAdmin
+                .from('punch_logs')
+                .select('*')
+                .eq('id', id)
+                .single();
 
             if (fetchError) {
-                throw fetchError;
+                return res.status(404).json({
+                    error:
+                        'Attendance record not found.'
+                });
             }
 
             if (
                 String(
-                    original.status ||
-                        ''
+                    original.status
                 ).toUpperCase() ===
                 'VOIDED'
             ) {
                 return res.status(400).json({
                     error:
-                        'This punch has already been voided.'
+                        'This attendance record has already been voided.'
                 });
             }
 
-            const now =
-                new Date().toISOString();
-
             const {
-                data,
+                data: updated,
                 error
-            } =
-                await supabaseAdmin
-                    .from('punch_logs')
-                    .update({
-                        status: 'VOIDED',
-                        void_reason:
-                            reason,
-                        voided_at: now,
-                        voided_by:
-                            req.user.id
-                    })
-                    .eq('id', id)
-                    .select()
-                    .single();
+            } = await supabaseAdmin
+                .from('punch_logs')
+                .update({
+                    status: 'VOIDED',
+                    void_reason:
+                        String(reason).trim(),
+                    voided_at:
+                        new Date().toISOString(),
+                    voided_by:
+                        req.user.id
+                })
+                .eq('id', id)
+                .select()
+                .single();
 
             if (error) {
-                throw error;
+                return res.status(500).json({
+                    error:
+                        'Unable to void attendance record.',
+                    details:
+                        error.message
+                });
             }
 
             await recordAuditEvent({
@@ -1378,51 +1271,49 @@ app.post(
                     'VOID_PUNCH',
                 employeeId:
                     original.user_id,
-                punchId: original.id,
+                punchId:
+                    original.id,
                 description:
-                    `Punch ${original.state} for ${original.user_id} was voided.`,
+                    `Punch ${original.id} for ${original.user_id} was voided.`,
                 metadata: {
-                    originalTimestamp:
-                        original.timestamp,
-                    originalState:
+                    original_state:
                         original.state,
-                    originalStatus:
-                        original.status,
-                    voidReason:
-                        reason,
-                    voidedAt: now
+                    original_timestamp:
+                        original.timestamp,
+                    reason:
+                        String(
+                            reason
+                        ).trim()
                 }
             });
 
-            io.emit(
-                'dataRefreshed'
-            );
+            io.emit('dataRefreshed');
 
             res.json({
                 message:
-                    'Punch record voided successfully.',
-                record: data
+                    'Attendance record voided successfully.',
+                record: updated
             });
 
         } catch (error) {
             console.error(
-                'Void punch error:',
+                '[VOID PUNCH]',
                 error
             );
 
             res.status(500).json({
                 error:
-                    'Unable to void punch record.'
+                    'Unable to void attendance record.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| USB / TERMINAL IMPORT
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   USB IMPORT
+========================================================= */
 
 app.post(
     '/api/upload-usb',
@@ -1433,15 +1324,17 @@ app.post(
             if (!req.file) {
                 return res.status(400).json({
                     error:
-                        'No attendance file was uploaded.'
+                        'Please select a CSV, DAT or TXT attendance file.'
                 });
             }
 
             /*
-            IMPORTANT:
-            multer uses memoryStorage(),
-            therefore req.file.path DOES NOT EXIST.
-            */
+             * IMPORTANT:
+             * multer uses memoryStorage(), therefore
+             * req.file.path DOES NOT EXIST.
+             *
+             * We correctly read req.file.buffer.
+             */
 
             const content =
                 req.file.buffer.toString(
@@ -1463,24 +1356,30 @@ app.post(
                 const parts =
                     line
                         .split(
-                            /[\t,;]+/
+                            /\t|,|;/
                         )
                         .map(
                             value =>
-                                value.trim()
+                                value
+                                    .trim()
+                                    .replace(
+                                        /^["']|["']$/g,
+                                        ''
+                                    )
                         );
 
-                if (
-                    parts.length < 3
-                ) {
+                if (parts.length < 3) {
                     continue;
                 }
 
-                const [
-                    userId,
-                    timestamp,
-                    state
-                ] = parts;
+                const userId =
+                    parts[0];
+
+                const timestamp =
+                    parts[1];
+
+                const state =
+                    parts[2];
 
                 if (
                     !userId ||
@@ -1490,39 +1389,54 @@ app.post(
                     continue;
                 }
 
+                const parsedDate =
+                    new Date(timestamp);
+
+                if (
+                    Number.isNaN(
+                        parsedDate.getTime()
+                    )
+                ) {
+                    continue;
+                }
+
                 records.push({
                     user_id: userId,
                     timestamp:
-                        new Date(
-                            timestamp
-                        ).toISOString(),
+                        parsedDate.toISOString(),
                     state,
                     status: 'VALID',
-                    is_manual: false,
-                    source: 'USB'
+                    is_manual: false
                 });
             }
 
             if (!records.length) {
                 return res.status(400).json({
                     error:
-                        'No valid attendance records were found in the file.'
+                        'No valid attendance records were found in the imported file.'
                 });
             }
 
             const {
                 data,
                 error
-            } =
-                await supabaseAdmin
-                    .from('punch_logs')
-                    .insert(
-                        records
-                    )
-                    .select();
+            } = await supabaseAdmin
+                .from('punch_logs')
+                .insert(records)
+                .select();
 
             if (error) {
-                throw error;
+                console.error(
+                    '[USB IMPORT]',
+                    error
+                );
+
+                return res.status(500).json({
+                    error:
+                        'Unable to import USB attendance records.',
+                    details:
+                        error.message
+                });
             }
 
             await recordAuditEvent({
@@ -1530,22 +1444,20 @@ app.post(
                 eventType:
                     'USB_IMPORT',
                 description:
-                    `USB attendance import completed: ${records.length} records.`,
+                    `Imported ${records.length} attendance records from ${req.file.originalname}.`,
                 metadata: {
                     filename:
                         req.file.originalname,
-                    recordCount:
+                    recordsImported:
                         records.length
                 }
             });
 
-            io.emit(
-                'dataRefreshed'
-            );
+            io.emit('dataRefreshed');
 
-            res.json({
+            res.status(201).json({
                 message:
-                    `USB import completed. ${records.length} attendance records imported.`,
+                    `${records.length} attendance record(s) imported successfully.`,
                 count:
                     records.length,
                 records:
@@ -1554,23 +1466,23 @@ app.post(
 
         } catch (error) {
             console.error(
-                'USB import error:',
+                '[USB IMPORT EXCEPTION]',
                 error
             );
 
             res.status(500).json({
                 error:
-                    'USB attendance import failed.'
+                    'USB import failed.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| BIOMETRIC PUSH
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   BIOMETRIC PUSH
+========================================================= */
 
 app.post(
     '/api/biometric/push',
@@ -1580,7 +1492,7 @@ app.post(
                 userId,
                 timestamp,
                 state
-            } = req.body;
+            } = req.body || {};
 
             if (
                 !userId ||
@@ -1593,130 +1505,172 @@ app.post(
                 });
             }
 
+            const parsedDate =
+                new Date(timestamp);
+
+            if (
+                Number.isNaN(
+                    parsedDate.getTime()
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        'Invalid timestamp.'
+                });
+            }
+
             const {
                 data,
                 error
-            } =
-                await supabaseAdmin
-                    .from('punch_logs')
-                    .insert([
-                        {
-                            user_id:
-                                userId,
-                            timestamp:
-                                new Date(
-                                    timestamp
-                                ).toISOString(),
-                            state,
-                            status:
-                                'VALID',
-                            is_manual:
-                                false,
-                            source:
-                                'BIOMETRIC'
-                        }
-                    ])
-                    .select()
-                    .single();
+            } = await supabaseAdmin
+                .from('punch_logs')
+                .insert([
+                    {
+                        user_id:
+                            String(
+                                userId
+                            ).trim(),
+                        timestamp:
+                            parsedDate.toISOString(),
+                        state:
+                            String(
+                                state
+                            ).trim(),
+                        status: 'VALID',
+                        is_manual: false
+                    }
+                ])
+                .select()
+                .single();
 
             if (error) {
-                throw error;
+                return res.status(500).json({
+                    error:
+                        'Unable to save biometric punch.',
+                    details:
+                        error.message
+                });
             }
 
             await recordAuditEvent({
                 eventType:
                     'BIOMETRIC_SYNC',
                 employeeId:
-                    userId,
+                    String(
+                        userId
+                    ).trim(),
                 punchId:
-                    data?.id,
+                    data.id,
                 description:
-                    `Biometric ${state} punch received for ${userId}.`,
+                    `Biometric punch received for ${userId}.`,
                 metadata: {
+                    state,
                     timestamp:
-                        data.timestamp,
-                    state
+                        parsedDate.toISOString()
                 }
             });
 
-            io.emit(
-                'dataRefreshed'
-            );
+            io.emit('dataRefreshed');
 
-            res.json({
+            res.status(201).json({
                 message:
-                    'Biometric punch accepted.',
+                    'Biometric punch recorded.',
                 record: data
             });
 
         } catch (error) {
             console.error(
-                'Biometric error:',
+                '[BIOMETRIC]',
                 error
             );
 
             res.status(500).json({
                 error:
-                    'Unable to process biometric punch.'
+                    'Biometric synchronization failed.',
+                details:
+                    error.message
             });
         }
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| SOCKET.IO
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   SOCKET.IO
+========================================================= */
 
-io.on(
-    'connection',
-    socket => {
+io.on('connection', socket => {
+    console.log(
+        `[SOCKET] Client connected: ${socket.id}`
+    );
+
+    socket.on('disconnect', () => {
         console.log(
-            `Tikix HR client connected: ${socket.id}`
+            `[SOCKET] Client disconnected: ${socket.id}`
+        );
+    });
+});
+
+/* =========================================================
+   SPA FALLBACK
+========================================================= */
+
+app.get('*', (req, res, next) => {
+    if (
+        req.path.startsWith('/api/')
+    ) {
+        return next();
+    }
+
+    res.sendFile(
+        path.join(
+            __dirname,
+            'public',
+            'index.html'
+        )
+    );
+});
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use(
+    (err, req, res, next) => {
+        console.error(
+            '[SERVER ERROR]',
+            err
         );
 
-        socket.on(
-            'disconnect',
-            () => {
-                console.log(
-                    `Tikix HR client disconnected: ${socket.id}`
-                );
-            }
-        );
+        res.status(500).json({
+            error:
+                'Internal server error.',
+            details:
+                err.message
+        });
     }
 );
 
-/*
-|--------------------------------------------------------------------------
-| ROOT
-|--------------------------------------------------------------------------
-*/
-
-app.get(
-    '/',
-    (req, res) => {
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'index.html'
-            )
-        );
-    }
-);
-
-/*
-|--------------------------------------------------------------------------
-| START
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   START SERVER
+========================================================= */
 
 server.listen(
     PORT,
     () => {
+        console.log('');
         console.log(
-            `Tikix HR Attendance running on port ${PORT}`
+            '======================================'
         );
+        console.log(
+            ' Tikix HR Attendance'
+        );
+        console.log(
+            ' Server running on port ' +
+                PORT
+        );
+        console.log(
+            '======================================'
+        );
+        console.log('');
     }
 );
