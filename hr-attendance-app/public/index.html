@@ -9,14 +9,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="/socket.io/socket.io.js"></script>
 
-<link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <script>
 tailwind.config = {
@@ -76,21 +72,28 @@ body {
     background: rgba(255,255,255,.92);
     backdrop-filter: blur(18px);
     border: 1px solid rgba(15,23,42,.08);
-    box-shadow:
-        0 15px 35px -18px rgba(0,0,0,.18);
+    box-shadow: 0 15px 35px -18px rgba(0,0,0,.18);
 }
 
 .nav-item {
     transition: all .2s ease;
 }
 
+.nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.25rem;
+}
+
 .nav-item.active {
-    background:
-        linear-gradient(
-            90deg,
-            rgba(82,20,122,.09),
-            rgba(13,148,136,.09)
-        );
+    background: linear-gradient(90deg, rgba(82,20,122,.09), rgba(13,148,136,.09));
     border-left: 3px solid #0d9488;
     color: #0f172a;
 }
@@ -105,775 +108,395 @@ body {
 }
 
 .logo-glow {
-    filter:
-        drop-shadow(
-            0 4px 10px
-            rgba(13,148,136,.16)
-        );
+    filter: drop-shadow(0 4px 10px rgba(13,148,136,.16));
 }
 
-.status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    display: inline-block;
+.primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(to right, #52147a, #3b0b59);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    border: 1px solid #3b0b59;
+}
+.primary-btn:hover { background: linear-gradient(to right, #3b0b59, #240538); }
+
+.secondary-btn {
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+.secondary-btn:hover { background: #f8fafc; color: #0f172a; }
+
+.input {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.75rem;
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+.input:focus { border-color: #0d9488; }
+
+.label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 0.375rem;
 }
 
-.metric-card {
-    transition:
-        transform .2s ease,
-        box-shadow .2s ease;
+.section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+    font-weight: 700;
 }
 
-.metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow:
-        0 20px 35px -18px
-        rgba(15,23,42,.22);
+.badge {
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
 }
-
-.page-fade {
-    animation: pageFade .25s ease;
-}
-
-@keyframes pageFade {
-    from {
-        opacity: 0;
-        transform: translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.activity-line {
-    position: relative;
-}
-
-.activity-line::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 42px;
-    bottom: -20px;
-    width: 1px;
-    background: #e2e8f0;
-}
-
-.activity-line:last-child::before {
-    display: none;
-}
+.badge.teal { background: #ccfbf1; color: #0f766e; }
+.badge.rose { background: #ffe4e6; color: #be123c; }
+.badge.amber { background: #fef3c7; color: #b45309; }
+.badge.purple { background: #f3e8ff; color: #6b21a8; }
+.badge.sky { background: #e0f2fe; color: #0369a1; }
 </style>
 </head>
 
 <body class="h-screen overflow-hidden text-slate-700">
 
-<!-- =========================================================
-AUTH
-========================================================= -->
-
-<div id="auth-view"
-     class="fixed inset-0 z-50 flex items-center justify-center p-5 bg-[#f8fafc] overflow-y-auto">
-
+<!-- AUTH VIEW -->
+<div id="auth-view" class="fixed inset-0 z-50 flex items-center justify-center p-5 bg-[#f8fafc] overflow-y-auto">
     <div class="w-full max-w-md">
-
         <div class="text-center mb-6">
-
             <div class="inline-flex p-4 rounded-2xl bg-white border border-slate-200 shadow-lg mb-4">
-
                 <picture>
-                    <source srcset="/tikix.svg"
-                            type="image/svg+xml">
-
-                    <img
-                        src="/tikix.png"
-                        alt="Tikix"
-                        class="h-10 w-auto object-contain logo-glow"
-                        onerror="this.onerror=null;this.src='/tikix.svg';">
+                    <source srcset="/tikix.svg" type="image/svg+xml">
+                    <img src="/tikix.png" alt="Tikix" class="h-10 w-auto object-contain logo-glow" onerror="this.onerror=null;this.src='/tikix.svg';">
                 </picture>
-
             </div>
-
             <h1 class="text-2xl font-extrabold text-slate-900">
-                Tikix
-                <span class="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-                    HR ATTENDANCE
-                </span>
+                Tikix <span class="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200">HR ATTENDANCE</span>
             </h1>
-
-            <p class="text-xs text-slate-500 mt-2">
-                Supervision & Timecard Intelligence Command Center
-            </p>
-
+            <p class="text-xs text-slate-500 mt-2">Supervision & Timecard Intelligence Command Center</p>
         </div>
 
         <div class="surface-card rounded-2xl p-7">
-
-            <div id="auth-alert"
-                 class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex gap-2">
+            <div id="auth-alert" class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex gap-2">
                 <i id="auth-alert-icon"></i>
                 <span id="auth-alert-message"></span>
             </div>
 
             <!-- LOGIN -->
-
             <div id="form-login">
-
                 <div class="border-b border-slate-100 pb-4 mb-5">
-                    <h2 class="font-bold text-slate-800">
-                        HR Portal Access
-                    </h2>
-
-                    <p class="text-xs text-slate-500 mt-1">
-                        Enter administrator credentials.
-                    </p>
+                    <h2 class="font-bold text-slate-800">HR Portal Access</h2>
+                    <p class="text-xs text-slate-500 mt-1">Enter administrator credentials.</p>
                 </div>
-
-                <form id="loginForm"
-                      class="space-y-4">
-
+                <form id="loginForm" class="space-y-4">
                     <div>
-                        <label class="label">
-                            Email Address
-                        </label>
-
-                        <input
-                            id="login-email"
-                            type="email"
-                            required
-                            autocomplete="username"
-                            class="input"
-                            placeholder="admin@company.com">
+                        <label class="label">Email Address</label>
+                        <input id="login-email" type="email" required autocomplete="username" class="input" placeholder="admin@company.com">
                     </div>
-
                     <div>
-
                         <div class="flex justify-between mb-1.5">
-                            <label class="label mb-0">
-                                Password
-                            </label>
-
-                            <button
-                                type="button"
-                                onclick="showAuthSubForm('forgot')"
-                                class="text-xs text-teal-600 hover:underline">
-                                Forgot Password?
-                            </button>
+                            <label class="label mb-0">Password</label>
+                            <button type="button" onclick="showAuthSubForm('forgot')" class="text-xs text-teal-600 hover:underline">Forgot Password?</button>
                         </div>
-
-                        <input
-                            id="login-password"
-                            type="password"
-                            required
-                            autocomplete="current-password"
-                            class="input"
-                            placeholder="••••••••••••">
+                        <input id="login-password" type="password" required autocomplete="current-password" class="input" placeholder="••••••••••••">
                     </div>
-
-                    <button
-                        id="loginBtn"
-                        type="submit"
-                        class="primary-btn w-full">
+                    <button id="loginBtn" type="submit" class="primary-btn w-full">
                         <i class="fa-solid fa-right-to-bracket"></i>
                         Sign In to Dashboard
                     </button>
-
                 </form>
-
                 <div class="text-center mt-5 text-xs text-slate-500">
                     Need an admin account?
-
-                    <button
-                        onclick="showAuthSubForm('register')"
-                        class="text-teal-600 font-bold hover:underline">
-                        Create Admin Account
-                    </button>
+                    <button onclick="showAuthSubForm('register')" class="text-teal-600 font-bold hover:underline">Create Admin Account</button>
                 </div>
-
             </div>
 
             <!-- REGISTER -->
-
-            <div id="form-register"
-                 class="hidden">
-
+            <div id="form-register" class="hidden">
                 <div class="border-b border-slate-100 pb-4 mb-5">
-                    <h2 class="font-bold text-slate-800">
-                        Create Admin Account
-                    </h2>
-
-                    <p class="text-xs text-slate-500 mt-1">
-                        Register Tikix HR supervisor credentials.
-                    </p>
+                    <h2 class="font-bold text-slate-800">Create Admin Account</h2>
+                    <p class="text-xs text-slate-500 mt-1">Register Tikix HR supervisor credentials.</p>
                 </div>
-
-                <form id="registerForm"
-                      class="space-y-3">
-
-                    <input
-                        id="reg-fullname"
-                        required
-                        class="input"
-                        placeholder="Full Name">
-
-                    <input
-                        id="reg-company"
-                        required
-                        class="input"
-                        placeholder="Company / Organization">
-
-                    <input
-                        id="reg-email"
-                        type="email"
-                        required
-                        class="input"
-                        placeholder="Admin Email">
-
-                    <input
-                        id="reg-password"
-                        type="password"
-                        required
-                        minlength="6"
-                        class="input"
-                        placeholder="Password">
-
-                    <button class="primary-btn w-full">
-                        Register Administrator
-                    </button>
-
+                <form id="registerForm" class="space-y-3">
+                    <input id="reg-fullname" required class="input" placeholder="Full Name">
+                    <input id="reg-company" required class="input" placeholder="Company / Organization">
+                    <input id="reg-email" type="email" required class="input" placeholder="Admin Email">
+                    <input id="reg-password" type="password" required minlength="6" class="input" placeholder="Password">
+                    <button class="primary-btn w-full">Register Administrator</button>
                 </form>
-
                 <div class="text-center mt-5 text-xs">
-                    <button
-                        onclick="showAuthSubForm('login')"
-                        class="text-teal-600 font-bold">
-                        Back to Login
-                    </button>
+                    <button onclick="showAuthSubForm('login')" class="text-teal-600 font-bold">Back to Login</button>
                 </div>
-
             </div>
 
             <!-- FORGOT -->
-
-            <div id="form-forgot"
-                 class="hidden">
-
+            <div id="form-forgot" class="hidden">
                 <div class="border-b border-slate-100 pb-4 mb-5">
-                    <h2 class="font-bold text-slate-800">
-                        Reset Password
-                    </h2>
-
-                    <p class="text-xs text-slate-500 mt-1">
-                        Password recovery instructions.
-                    </p>
+                    <h2 class="font-bold text-slate-800">Reset Password</h2>
+                    <p class="text-xs text-slate-500 mt-1">Password recovery instructions.</p>
                 </div>
-
-                <form id="forgotForm"
-                      class="space-y-4">
-
-                    <input
-                        id="forgot-email"
-                        type="email"
-                        required
-                        class="input"
-                        placeholder="Registered Admin Email">
-
-                    <button class="primary-btn w-full">
-                        Send Reset Instructions
-                    </button>
-
+                <form id="forgotForm" class="space-y-4">
+                    <input id="forgot-email" type="email" required class="input" placeholder="Registered Admin Email">
+                    <button class="primary-btn w-full">Send Reset Instructions</button>
                 </form>
-
                 <div class="text-center mt-5 text-xs">
-                    <button
-                        onclick="showAuthSubForm('login')"
-                        class="text-teal-600 font-bold">
-                        Back to Login
-                    </button>
+                    <button onclick="showAuthSubForm('login')" class="text-teal-600 font-bold">Back to Login</button>
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
-<!-- =========================================================
-DASHBOARD
-========================================================= -->
-
-<div id="dashboard-view"
-     class="hidden h-screen w-full">
+<!-- DASHBOARD VIEW -->
+<div id="dashboard-view" class="hidden h-screen w-full flex">
 
     <!-- SIDEBAR -->
-
     <aside class="w-72 h-screen bg-white/95 border-r border-slate-200 flex flex-col shrink-0">
-
         <div class="h-20 px-6 border-b border-slate-200 flex items-center">
-
             <picture>
-                <source srcset="/tikix.svg"
-                        type="image/svg+xml">
-
-                <img
-                    src="/tikix.png"
-                    alt="Tikix"
-                    class="h-8 w-auto object-contain logo-glow"
-                    onerror="this.onerror=null;this.src='/tikix.svg';">
+                <source srcset="/tikix.svg" type="image/svg+xml">
+                <img src="/tikix.png" alt="Tikix" class="h-8 w-auto object-contain logo-glow" onerror="this.onerror=null;this.src='/tikix.svg';">
             </picture>
-
             <div class="ml-3">
-                <p class="text-[10px] text-slate-500">
-                    Attendance Command
-                </p>
-
-                <p class="text-[9px] text-teal-600 font-bold uppercase tracking-widest">
-                    Live Operations
-                </p>
+                <p class="text-[10px] text-slate-500">Attendance Command</p>
+                <p class="text-[9px] text-teal-600 font-bold uppercase tracking-widest">Live Operations</p>
             </div>
-
         </div>
 
         <nav class="flex-1 overflow-y-auto p-4">
-
-            <!-- SUPERVISION -->
-
-            <div class="px-3 pt-2 pb-2">
-                <span class="section-label">
-                    Supervision Desk
-                </span>
-            </div>
-
-            <button onclick="switchTab('all')"
-                    id="nav-all"
-                    class="nav-item active nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-layer-group text-slate-400"></i>
-                    All Attendance
-                </span>
-
-                <b id="badge-all"
-                   class="badge">
-                    0
-                </b>
+            <div class="px-3 pt-2 pb-2"><span class="section-label">Supervision Desk</span></div>
+            <button onclick="switchTab('all')" id="nav-all" class="nav-item active nav-btn">
+                <span><i class="fa-solid fa-layer-group text-slate-400 mr-2"></i>All Attendance</span>
+                <b id="badge-all" class="badge">0</b>
+            </button>
+            <button onclick="switchTab('onduty')" id="nav-onduty" class="nav-item nav-btn">
+                <span><i class="fa-solid fa-user-check text-teal-600 mr-2"></i>On-Duty Personnel</span>
+                <b id="badge-onduty" class="badge teal">0</b>
+            </button>
+            <button onclick="switchTab('late')" id="nav-late" class="nav-item nav-btn">
+                <span><i class="fa-solid fa-clock-rotate-left text-rose-600 mr-2"></i>Late Arrivals</span>
+                <b id="badge-late" class="badge rose">0</b>
+            </button>
+            <button onclick="switchTab('overtime')" id="nav-overtime" class="nav-item nav-btn">
+                <span><i class="fa-solid fa-bolt text-amber-500 mr-2"></i>Overtime Roster</span>
+                <b id="badge-overtime" class="badge amber">0</b>
             </button>
 
-            <button onclick="switchTab('onduty')"
-                    id="nav-onduty"
-                    class="nav-item nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-user-check text-teal-600"></i>
-                    On-Duty Personnel
-                </span>
-
-                <b id="badge-onduty"
-                   class="badge teal">
-                    0
-                </b>
+            <div class="px-3 pt-7 pb-2"><span class="section-label">History & Audit</span></div>
+            <button onclick="switchTab('history')" id="nav-history" class="nav-item nav-btn">
+                <span><i class="fa-solid fa-clock-rotate-left text-purple-600 mr-2"></i>Attendance History</span>
+                <b id="badge-history" class="badge purple">30D</b>
             </button>
-
-            <button onclick="switchTab('late')"
-                    id="nav-late"
-                    class="nav-item nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-clock-rotate-left text-rose-600"></i>
-                    Late Arrivals
-                </span>
-
-                <b id="badge-late"
-                   class="badge rose">
-                    0
-                </b>
+            <button onclick="switchTab('voided')" id="nav-voided" class="nav-item nav-btn">
+                <span><i class="fa-solid fa-shield-halved text-slate-500 mr-2"></i>Voided Audit Trail</span>
+                <b id="badge-voided" class="badge">0</b>
             </button>
-
-            <button onclick="switchTab('overtime')"
-                    id="nav-overtime"
-                    class="nav-item nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-bolt text-amber-500"></i>
-                    Overtime Roster
-                </span>
-
-                <b id="badge-overtime"
-                   class="badge amber">
-                    0
-                </b>
+            <button onclick="switchTab('activity')" id="nav-activity" class="nav-item nav-btn">
+                <span><i class="fa-solid fa-list-check text-sky-600 mr-2"></i>System Activity</span>
+                <b id="badge-activity" class="badge sky">0</b>
             </button>
-
-            <!-- HISTORY -->
-
-            <div class="px-3 pt-7 pb-2">
-                <span class="section-label">
-                    History & Audit
-                </span>
-            </div>
-
-            <button onclick="switchTab('history')"
-                    id="nav-history"
-                    class="nav-item nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-clock-rotate-left text-purple-600"></i>
-                    Attendance History
-                </span>
-
-                <b id="badge-history"
-                   class="badge purple">
-                    30D
-                </b>
-            </button>
-
-            <button onclick="switchTab('voided')"
-                    id="nav-voided"
-                    class="nav-item nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-shield-halved text-slate-500"></i>
-                    Voided Audit Trail
-                </span>
-
-                <b id="badge-voided"
-                   class="badge">
-                    0
-                </b>
-            </button>
-
-            <button onclick="switchTab('activity')"
-                    id="nav-activity"
-                    class="nav-item nav-btn">
-
-                <span>
-                    <i class="fa-solid fa-list-check text-sky-600"></i>
-                    System Activity
-                </span>
-
-                <b id="badge-activity"
-                   class="badge sky">
-                    0
-                </b>
-            </button>
-
         </nav>
 
-        <!-- ADMIN -->
-
         <div class="p-4 border-t border-slate-200 bg-slate-50">
-
-            <button
-                onclick="openManualModal()"
-                class="w-full py-3 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white font-bold text-xs transition mb-2">
-
-                <i class="fa-solid fa-pen-to-square mr-2"></i>
-                Manual Override
-
+            <button onclick="openManualModal()" class="w-full py-3 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white font-bold text-xs transition mb-2">
+                <i class="fa-solid fa-pen-to-square mr-2"></i>Manual Override
             </button>
-
-            <button
-                onclick="logoutHR()"
-                class="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-rose-50 hover:text-rose-600 font-bold text-xs transition">
-
-                <i class="fa-solid fa-right-from-bracket mr-2"></i>
-                Sign Out
-
+            <button onclick="logoutHR()" class="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-rose-50 hover:text-rose-600 font-bold text-xs transition">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Sign Out
             </button>
-
         </div>
-
     </aside>
 
-    <!-- MAIN -->
-
+    <!-- MAIN CONTENT -->
     <main class="flex-1 min-w-0 h-screen flex flex-col">
-
-        <!-- HEADER -->
-
         <header class="h-20 shrink-0 bg-white/85 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between">
-
             <div>
-
                 <div class="flex items-center gap-3">
-
-                    <h2 id="view-title"
-                        class="text-xl font-extrabold text-slate-900">
-                        All Employee Attendance
-                    </h2>
-
-                    <span class="px-2 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-[9px] font-bold uppercase">
-                        ● Live
-                    </span>
-
+                    <h2 id="view-title" class="text-xl font-extrabold text-slate-900">All Employee Attendance</h2>
+                    <span class="px-2 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-[9px] font-bold uppercase">● Live</span>
                 </div>
-
-                <p id="view-subtitle"
-                   class="text-xs text-slate-500 mt-1">
-                    Complete daily attendance command view.
-                </p>
-
+                <p id="view-subtitle" class="text-xs text-slate-500 mt-1">Complete daily attendance command view.</p>
             </div>
-
             <div class="flex items-center gap-3">
-
                 <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 h-10">
-
                     <i class="fa-regular fa-calendar text-teal-600"></i>
-
-                    <input
-                        id="date-picker"
-                        type="date"
-                        class="text-xs outline-none bg-transparent">
-
+                    <input id="date-picker" type="date" class="text-xs outline-none bg-transparent">
                 </div>
-
                 <form id="usbForm">
-
-                    <input
-                        type="file"
-                        id="logfile"
-                        name="logfile"
-                        accept=".csv,.dat,.txt"
-                        class="hidden">
-
-                    <button
-                        type="button"
-                        onclick="document.getElementById('logfile').click()"
-                        class="h-10 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold">
-
-                        <i class="fa-solid fa-file-import mr-2 text-slate-400"></i>
-                        Import USB
-
+                    <input type="file" id="logfile" name="logfile" accept=".csv,.dat,.txt" class="hidden">
+                    <button type="button" onclick="document.getElementById('logfile').click()" class="h-10 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold">
+                        <i class="fa-solid fa-file-import mr-2 text-slate-400"></i>Import USB
                     </button>
-
-                    <button
-                        id="usbSubmitBtn"
-                        type="submit"
-                        class="hidden">
-                    </button>
-
+                    <button id="usbSubmitBtn" type="submit" class="hidden"></button>
                 </form>
-
             </div>
-
         </header>
 
-        <!-- CONTENT -->
+        <div id="page-content" class="flex-1 overflow-y-auto p-8 space-y-8">
+            <!-- METRICS CARDS -->
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div class="surface-card rounded-2xl p-5 metric-card">
+                    <div class="flex items-center justify-between text-slate-400 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider">Total Headcount</span><i class="fa-solid fa-users text-slate-500 text-xs"></i></div>
+                    <p id="stat-total" class="text-3xl font-extrabold text-slate-900 font-mono">0</p>
+                </div>
+                <div class="surface-card rounded-2xl p-5 metric-card">
+                    <div class="flex items-center justify-between text-teal-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Active On-Duty</span><i class="fa-solid fa-user-check text-xs"></i></div>
+                    <p id="stat-active" class="text-3xl font-extrabold text-teal-700 font-mono">0</p>
+                </div>
+                <div class="surface-card rounded-2xl p-5 metric-card">
+                    <div class="flex items-center justify-between text-rose-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Late Arrivals</span><i class="fa-solid fa-clock text-xs"></i></div>
+                    <p id="stat-late" class="text-3xl font-extrabold text-rose-600 font-mono">0</p>
+                </div>
+                <div class="surface-card rounded-2xl p-5 metric-card">
+                    <div class="flex items-center justify-between text-purple-700 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Punctuality</span><i class="fa-solid fa-bullseye text-xs"></i></div>
+                    <p id="stat-punctuality" class="text-3xl font-extrabold text-slate-800 font-mono">100%</p>
+                </div>
+                <div class="surface-card rounded-2xl p-5 metric-card">
+                    <div class="flex items-center justify-between text-amber-500 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Overtime Accum.</span><i class="fa-solid fa-bolt text-xs"></i></div>
+                    <p id="stat-ot" class="text-3xl font-extrabold text-amber-600 font-mono">0 hrs</p>
+                </div>
+                <div class="surface-card rounded-2xl p-5 metric-card">
+                    <div class="flex items-center justify-between text-sky-600 mb-3"><span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Avg Shift Hours</span><i class="fa-solid fa-chart-simple text-xs"></i></div>
+                    <p id="stat-avg" class="text-3xl font-extrabold text-slate-700 font-mono">0 hrs</p>
+                </div>
+            </div>
 
-        <div id="page-content"
-             class="flex-1 overflow-y-auto p-8">
-
+            <!-- TABLE CONTAINER -->
+            <section class="surface-card rounded-2xl overflow-hidden border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white/60">
+                    <div class="flex items-center gap-2.5"><div class="w-2 h-2 rounded-full bg-teal-600"></div><h3 class="text-sm font-bold text-slate-800">Live Timecards Matrix</h3></div>
+                    <span class="text-[11px] text-slate-400 font-mono">Tikix Data Stream Protocol v2.4</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[1000px]">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                                <th class="px-6 py-4">Employee ID</th>
+                                <th class="px-4 py-4">Time In</th>
+                                <th class="px-4 py-4">Time Out</th>
+                                <th class="px-4 py-4">Break Used</th>
+                                <th class="px-4 py-4">Net Worked</th>
+                                <th class="px-4 py-4">Overtime</th>
+                                <th class="px-4 py-4">Data Source</th>
+                                <th class="px-6 py-4 text-right">Audit Options</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-table" class="divide-y divide-slate-100 text-xs">
+                            <tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl mb-3"></i><br>Syncing Tikix HR telemetry data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
-
     </main>
-
 </div>
 
-<!-- =========================================================
-MANUAL MODAL
-========================================================= -->
-
-<div id="manualModal"
-     class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-5">
-
+<!-- MANUAL MODAL -->
+<div id="manualModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-5">
     <div class="surface-card rounded-2xl max-w-md w-full">
-
         <div class="p-6 border-b border-slate-100">
-
-            <h3 class="font-bold text-slate-800">
-                Manual Punch Override
-            </h3>
-
-            <p class="text-xs text-slate-500 mt-1">
-                This action will be permanently audited.
-            </p>
-
+            <h3 class="font-bold text-slate-800">Manual Punch Override</h3>
+            <p class="text-xs text-slate-500 mt-1">This action will be permanently audited.</p>
         </div>
-
-        <form id="manualPunchForm"
-              class="p-6 space-y-4">
-
+        <form id="manualPunchForm" class="p-6 space-y-4">
             <div>
-                <label class="label">
-                    Employee ID
-                </label>
-
-                <input
-                    id="manualEmpId"
-                    required
-                    class="input font-mono"
-                    placeholder="EMP-1002">
+                <label class="label">Employee ID</label>
+                <input id="manualEmpId" required class="input font-mono" placeholder="EMP-1002">
             </div>
-
             <div class="grid grid-cols-2 gap-3">
-
                 <div>
-                    <label class="label">
-                        Date
-                    </label>
-
-                    <input
-                        id="manualDate"
-                        type="date"
-                        required
-                        class="input">
+                    <label class="label">Date</label>
+                    <input id="manualDate" type="date" required class="input">
                 </div>
-
                 <div>
-                    <label class="label">
-                        Time
-                    </label>
-
-                    <input
-                        id="manualTime"
-                        type="time"
-                        required
-                        class="input">
+                    <label class="label">Time</label>
+                    <input id="manualTime" type="time" required class="input">
                 </div>
-
             </div>
-
             <div>
-                <label class="label">
-                    Punch State
-                </label>
-
-                <select
-                    id="manualState"
-                    class="input">
-
+                <label class="label">Punch State</label>
+                <select id="manualState" class="input">
                     <option>Time-In</option>
                     <option>Break-Out</option>
                     <option>Break-In</option>
                     <option>Overtime-In</option>
                     <option>Overtime-Out</option>
                     <option>Time-Out</option>
-
                 </select>
-
             </div>
-
             <div>
-                <label class="label">
-                    Override Reason
-                </label>
-
-                <textarea
-                    id="manualReason"
-                    required
-                    rows="3"
-                    class="input"
-                    placeholder="Why does this record need to be manually created?"></textarea>
+                <label class="label">Override Reason</label>
+                <textarea id="manualReason" required rows="3" class="input" placeholder="Why does this record need to be manually created?"></textarea>
             </div>
-
             <div class="flex justify-end gap-2">
-
-                <button
-                    type="button"
-                    onclick="closeManualModal()"
-                    class="secondary-btn">
-                    Cancel
-                </button>
-
-                <button
-                    class="primary-btn">
-                    Save Audited Record
-                </button>
-
+                <button type="button" onclick="closeManualModal()" class="secondary-btn">Cancel</button>
+                <button type="submit" class="primary-btn">Save Audited Record</button>
             </div>
-
         </form>
-
     </div>
-
 </div>
 
-<!-- =========================================================
-LOG MODAL
-========================================================= -->
-
-<div id="logsModal"
-     class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-5">
-
+<!-- LOG MODAL -->
+<div id="logsModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-5">
     <div class="surface-card rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden">
-
         <div class="p-6 border-b border-slate-100 flex justify-between">
-
             <div>
-                <h3 class="font-bold text-slate-800">
-                    Punch Audit & Inspection
-                </h3>
-
-                <p id="logsModalEmployee"
-                   class="text-xs text-slate-500 mt-1">
-                </p>
+                <h3 class="font-bold text-slate-800">Punch Audit & Inspection</h3>
+                <p id="logsModalEmployee" class="text-xs text-slate-500 mt-1"></p>
             </div>
-
-            <button
-                onclick="closeLogsModal()"
-                class="w-8 h-8 rounded-lg hover:bg-slate-100">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
+            <button onclick="closeLogsModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
         <div class="p-6 overflow-y-auto">
-
             <div class="border border-slate-200 rounded-xl overflow-hidden">
-
                 <table class="w-full text-xs">
-
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="p-3 text-left">
-                                Timestamp
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Punch
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Source
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Status
-                            </th>
-
-                            <th class="p-3 text-right">
-                                Action
-                            </th>
+                            <th class="p-3 text-left">Timestamp</th>
+                            <th class="p-3 text-left">Punch</th>
+                            <th class="p-3 text-left">Status</th>
+                            <th class="p-3 text-right">Action</th>
                         </tr>
                     </thead>
-
                     <tbody id="logsTableBody"></tbody>
-
                 </table>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 <script>
 (function () {
-
     'use strict';
 
-    /* =====================================================
-       SOCKET
-    ===================================================== */
-
     let socket = null;
-
     try {
         if (typeof io !== 'undefined') {
             socket = io();
@@ -882,51 +505,24 @@ LOG MODAL
         console.warn('Socket connection unavailable:', error);
     }
 
-    /* =====================================================
-       ELEMENTS
-    ===================================================== */
-
-    const authView =
-        document.getElementById('auth-view');
-
-    const dashboardView =
-        document.getElementById('dashboard-view');
-
-    const loginForm =
-        document.getElementById('loginForm');
-
-    const registerForm =
-        document.getElementById('registerForm');
-
-    const forgotForm =
-        document.getElementById('forgotForm');
-
-    const datePicker =
-        document.getElementById('date-picker');
-
-    const authAlert =
-        document.getElementById('auth-alert');
-
-    const alertIcon =
-        document.getElementById('auth-alert-icon');
-
-    const alertMsg =
-        document.getElementById('auth-alert-message');
+    const authView = document.getElementById('auth-view');
+    const dashboardView = document.getElementById('dashboard-view');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const forgotForm = document.getElementById('forgotForm');
+    const datePicker = document.getElementById('date-picker');
+    const authAlert = document.getElementById('auth-alert');
+    const alertIcon = document.getElementById('auth-alert-icon');
+    const alertMsg = document.getElementById('auth-alert-message');
 
     let currentTab = 'all';
-
-    let authToken =
-        localStorage.getItem('hr_token');
+    let authToken = localStorage.getItem('hr_token');
 
     let rawDataCache = {
         employees: [],
         stats: {},
         voidedLogs: []
     };
-
-    /* =====================================================
-       AUTH STATE
-    ===================================================== */
 
     if (authToken) {
         verifyExistingSession();
@@ -935,20 +531,10 @@ LOG MODAL
     }
 
     async function verifyExistingSession() {
-
         try {
-
-            const response =
-                await fetch(
-                    '/api/hr-analytics?date=' +
-                    getToday(),
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${authToken}`
-                        }
-                    }
-                );
+            const response = await fetch('/api/hr-analytics?date=' + getToday(), {
+                headers: { Authorization: `Bearer ${authToken}` }
+            });
 
             if (response.status === 401) {
                 clearSession();
@@ -957,669 +543,230 @@ LOG MODAL
             }
 
             showDashboard();
-
         } catch (error) {
-
-            console.warn(
-                'Existing session check failed:',
-                error
-            );
-
-            /*
-             * Do not trap the user behind a
-             * broken token.
-             */
-
+            console.warn('Existing session check failed:', error);
             clearSession();
             showAuth();
         }
     }
 
     function clearSession() {
-
-        localStorage.removeItem(
-            'hr_token'
-        );
-
-        localStorage.removeItem(
-            'hr_user'
-        );
-
+        localStorage.removeItem('hr_token');
+        localStorage.removeItem('hr_user');
         authToken = null;
     }
 
     function showDashboard() {
-
-        authView.classList.add(
-            'hidden'
-        );
-
-        dashboardView.classList.remove(
-            'hidden'
-        );
-
+        authView.classList.add('hidden');
+        dashboardView.classList.remove('hidden');
         if (datePicker) {
-            datePicker.value =
-                getToday();
+            datePicker.value = getToday();
         }
-
         fetchDashboardData();
     }
 
     function showAuth() {
-
-        dashboardView.classList.add(
-            'hidden'
-        );
-
-        authView.classList.remove(
-            'hidden'
-        );
-
+        dashboardView.classList.add('hidden');
+        authView.classList.remove('hidden');
         showAuthSubForm('login');
     }
 
-    /* =====================================================
-       DATE
-    ===================================================== */
-
     function getToday() {
-
-        const now =
-            new Date();
-
-        const year =
-            now.getFullYear();
-
-        const month =
-            String(
-                now.getMonth() + 1
-            ).padStart(2, '0');
-
-        const day =
-            String(
-                now.getDate()
-            ).padStart(2, '0');
-
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
 
-    /* =====================================================
-       AUTH FORMS
-    ===================================================== */
-
-    function showAuthSubForm(
-        formType
-    ) {
-
+    function showAuthSubForm(formType) {
         hideAlert();
+        const loginPanel = document.getElementById('form-login');
+        const registerPanel = document.getElementById('form-register');
+        const forgotPanel = document.getElementById('form-forgot');
 
-        const loginPanel =
-            document.getElementById(
-                'form-login'
-            );
+        loginPanel.classList.add('hidden');
+        registerPanel.classList.add('hidden');
+        forgotPanel.classList.add('hidden');
 
-        const registerPanel =
-            document.getElementById(
-                'form-register'
-            );
-
-        const forgotPanel =
-            document.getElementById(
-                'form-forgot'
-            );
-
-        loginPanel.classList.add(
-            'hidden'
-        );
-
-        registerPanel.classList.add(
-            'hidden'
-        );
-
-        forgotPanel.classList.add(
-            'hidden'
-        );
-
-        if (
-            formType ===
-            'register'
-        ) {
-            registerPanel.classList.remove(
-                'hidden'
-            );
-        }
-
-        else if (
-            formType ===
-            'forgot'
-        ) {
-            forgotPanel.classList.remove(
-                'hidden'
-            );
-        }
-
-        else {
-            loginPanel.classList.remove(
-                'hidden'
-            );
-        }
+        if (formType === 'register') { registerPanel.classList.remove('hidden'); }
+        else if (formType === 'forgot') { forgotPanel.classList.remove('hidden'); }
+        else { loginPanel.classList.remove('hidden'); }
     }
 
-    function showAlert(
-        message,
-        success = false
-    ) {
+    function showAlert(message, success = false) {
+        alertMsg.innerText = message;
+        authAlert.className = success
+            ? 'p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-teal-50 border border-teal-200 text-teal-700'
+            : 'p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-600';
 
-        alertMsg.innerText =
-            message;
-
-        authAlert.className =
-            success
-
-                ? 'p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-teal-50 border border-teal-200 text-teal-700'
-
-                : 'p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-600';
-
-        alertIcon.className =
-            success
-
-                ? 'fa-solid fa-circle-check shrink-0'
-
-                : 'fa-solid fa-circle-exclamation shrink-0';
-
-        authAlert.classList.remove(
-            'hidden'
-        );
+        alertIcon.className = success ? 'fa-solid fa-circle-check shrink-0' : 'fa-solid fa-circle-exclamation shrink-0';
+        authAlert.classList.remove('hidden');
     }
 
     function hideAlert() {
-
-        authAlert.classList.add(
-            'hidden'
-        );
+        authAlert.classList.add('hidden');
     }
 
-    /* =====================================================
-       LOGIN
-    ===================================================== */
+    loginForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        hideAlert();
 
-    loginForm.addEventListener(
-        'submit',
-        async function (event) {
+        const loginBtn = document.getElementById('loginBtn');
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value;
 
-            event.preventDefault();
-
-            hideAlert();
-
-            const loginBtn =
-                document.getElementById(
-                    'loginBtn'
-                );
-
-            const email =
-                document
-                    .getElementById(
-                        'login-email'
-                    )
-                    .value
-                    .trim()
-                    .toLowerCase();
-
-            const password =
-                document
-                    .getElementById(
-                        'login-password'
-                    )
-                    .value;
-
-            if (!email) {
-                showAlert(
-                    'Please enter your email address.'
-                );
-                return;
-            }
-
-            if (!password) {
-                showAlert(
-                    'Please enter your password.'
-                );
-                return;
-            }
-
-            loginBtn.disabled =
-                true;
-
-            loginBtn.innerHTML = `
-                <i class="fa-solid fa-circle-notch fa-spin"></i>
-                <span>Signing in...</span>
-            `;
-
-            try {
-
-                const response =
-                    await fetch(
-                        '/api/auth/login',
-                        {
-                            method: 'POST',
-
-                            headers: {
-                                'Content-Type':
-                                    'application/json',
-
-                                'Accept':
-                                    'application/json'
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    email,
-                                    password
-                                })
-                        }
-                    );
-
-                const data =
-                    await response
-                        .json()
-                        .catch(
-                            () => ({})
-                        );
-
-                if (
-                    !response.ok
-                ) {
-
-                    throw new Error(
-                        data.error ||
-                        data.message ||
-                        `Login failed (${response.status}).`
-                    );
-                }
-
-                if (
-                    !data.token
-                ) {
-
-                    throw new Error(
-                        'Authentication succeeded but no session token was returned.'
-                    );
-                }
-
-                localStorage.setItem(
-                    'hr_token',
-                    data.token
-                );
-
-                localStorage.setItem(
-                    'hr_user',
-                    JSON.stringify(
-                        data.user || {}
-                    )
-                );
-
-                authToken =
-                    data.token;
-
-                showDashboard();
-
-            } catch (error) {
-
-                console.error(
-                    'Tikix Login Error:',
-                    error
-                );
-
-                showAlert(
-                    error.message ||
-                    'Unable to sign in.'
-                );
-
-            } finally {
-
-                loginBtn.disabled =
-                    false;
-
-                loginBtn.innerHTML = `
-                    <span>Sign In to Dashboard</span>
-                `;
-            }
+        if (!email || !password) {
+            showAlert('Please enter both email and password.');
+            return;
         }
-    );
 
-    /* =====================================================
-       REGISTER
-    ===================================================== */
-
-    registerForm.addEventListener(
-        'submit',
-        async function (event) {
-
-            event.preventDefault();
-
-            hideAlert();
-
-            const payload = {
-
-                fullName:
-                    document
-                        .getElementById(
-                            'reg-fullname'
-                        )
-                        .value
-                        .trim(),
-
-                companyName:
-                    document
-                        .getElementById(
-                            'reg-company'
-                        )
-                        .value
-                        .trim(),
-
-                email:
-                    document
-                        .getElementById(
-                            'reg-email'
-                        )
-                        .value
-                        .trim()
-                        .toLowerCase(),
-
-                password:
-                    document
-                        .getElementById(
-                            'reg-password'
-                        )
-                        .value
-            };
-
-            try {
-
-                const response =
-                    await fetch(
-                        '/api/auth/register',
-                        {
-                            method: 'POST',
-
-                            headers: {
-                                'Content-Type':
-                                    'application/json'
-                            },
-
-                            body:
-                                JSON.stringify(
-                                    payload
-                                )
-                        }
-                    );
-
-                const data =
-                    await response
-                        .json()
-                        .catch(
-                            () => ({})
-                        );
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.error ||
-                        'Registration failed.'
-                    );
-                }
-
-                showAlert(
-                    data.message ||
-                    'Administrator account created successfully.',
-                    true
-                );
-
-                setTimeout(
-                    function () {
-
-                        document.getElementById(
-                            'login-email'
-                        ).value =
-                            payload.email;
-
-                        showAuthSubForm(
-                            'login'
-                        );
-
-                    },
-                    1000
-                );
-
-            } catch (error) {
-
-                console.error(
-                    'Registration error:',
-                    error
-                );
-
-                showAlert(
-                    error.message ||
-                    'Registration failed.'
-                );
-            }
-        }
-    );
-
-    /* =====================================================
-       FORGOT PASSWORD
-    ===================================================== */
-
-    forgotForm.addEventListener(
-        'submit',
-        async function (event) {
-
-            event.preventDefault();
-
-            hideAlert();
-
-            const email =
-                document
-                    .getElementById(
-                        'forgot-email'
-                    )
-                    .value
-                    .trim()
-                    .toLowerCase();
-
-            if (!email) {
-                showAlert(
-                    'Please enter your email address.'
-                );
-                return;
-            }
-
-            try {
-
-                const response =
-                    await fetch(
-                        '/api/auth/forgot-password',
-                        {
-                            method: 'POST',
-
-                            headers: {
-                                'Content-Type':
-                                    'application/json'
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    email
-                                })
-                        }
-                    );
-
-                const data =
-                    await response
-                        .json()
-                        .catch(
-                            () => ({})
-                        );
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.error ||
-                        'Password recovery failed.'
-                    );
-                }
-
-                showAlert(
-                    data.message ||
-                    'Recovery instructions have been sent.',
-                    true
-                );
-
-            } catch (error) {
-
-                console.error(
-                    'Password recovery error:',
-                    error
-                );
-
-                showAlert(
-                    error.message ||
-                    'Unable to request password recovery.'
-                );
-            }
-        }
-    );
-
-    /* =====================================================
-       LOGOUT
-    ===================================================== */
-
-    async function logoutHR() {
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>Signing in...</span>`;
 
         try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
 
-            if (authToken) {
-
-                await fetch(
-                    '/api/auth/logout',
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            Authorization:
-                                `Bearer ${authToken}`
-                        }
-                    }
-                );
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || data.message || `Login failed (${response.status}).`);
             }
 
+            if (!data.token) {
+                throw new Error('Authentication succeeded but no session token was returned.');
+            }
+
+            localStorage.setItem('hr_token', data.token);
+            localStorage.setItem('hr_user', JSON.stringify(data.user || {}));
+            authToken = data.token;
+            showDashboard();
         } catch (error) {
-            console.warn(
-                'Logout audit failed:',
-                error
-            );
+            console.error('Tikix Login Error:', error);
+            showAlert(error.message || 'Unable to sign in.');
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Sign In to Dashboard`;
+        }
+    });
+
+    registerForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        hideAlert();
+
+        const payload = {
+            fullName: document.getElementById('reg-fullname').value.trim(),
+            companyName: document.getElementById('reg-company').value.trim(),
+            email: document.getElementById('reg-email').value.trim().toLowerCase(),
+            password: document.getElementById('reg-password').value
+        };
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || 'Registration failed.');
+            }
+
+            showAlert(data.message || 'Administrator account created successfully.', true);
+            setTimeout(() => {
+                document.getElementById('login-email').value = payload.email;
+                showAuthSubForm('login');
+            }, 1000);
+        } catch (error) {
+            console.error('Registration error:', error);
+            showAlert(error.message || 'Registration failed.');
+        }
+    });
+
+    forgotForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        hideAlert();
+
+        const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+        if (!email) {
+            showAlert('Please enter your email address.');
+            return;
         }
 
-        clearSession();
+        try {
+            const response = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
 
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || 'Password recovery failed.');
+            }
+
+            showAlert(data.message || 'Recovery instructions have been sent.', true);
+        } catch (error) {
+            console.error('Password recovery error:', error);
+            showAlert(error.message || 'Unable to request password recovery.');
+        }
+    });
+
+    async function logoutHR() {
+        try {
+            if (authToken) {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+            }
+        } catch (error) {
+            console.warn('Logout audit failed:', error);
+        }
+        clearSession();
         showAuth();
     }
 
-    /* =====================================================
-       DASHBOARD
-    ===================================================== */
-
     async function fetchDashboardData() {
-
         if (!authToken) {
             showAuth();
             return;
         }
 
-        const selectedDate =
-            datePicker?.value ||
-            getToday();
+        const selectedDate = datePicker?.value || getToday();
 
         try {
+            const response = await fetch(`/api/hr-analytics?date=${encodeURIComponent(selectedDate)}`, {
+                headers: { Authorization: `Bearer ${authToken}`, Accept: 'application/json' }
+            });
 
-            const response =
-                await fetch(
-                    `/api/hr-analytics?date=${encodeURIComponent(selectedDate)}`,
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${authToken}`,
-
-                            Accept:
-                                'application/json'
-                        }
-                    }
-                );
-
-            if (
-                response.status ===
-                401
-            ) {
-
+            if (response.status === 401) {
                 clearSession();
                 showAuth();
                 return;
             }
 
-            const data =
-                await response
-                    .json()
-                    .catch(
-                        () => ({})
-                    );
-
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-
-                throw new Error(
-                    data.error ||
-                    `Dashboard failed (${response.status}).`
-                );
+                throw new Error(data.error || `Dashboard failed (${response.status}).`);
             }
 
-            rawDataCache =
-                data || {
-                    employees: [],
-                    stats: {},
-                    voidedLogs: []
-                };
-
+            rawDataCache = data || { employees: [], stats: {}, voidedLogs: [] };
             updateSidebarBadges();
-
             renderCurrentTab();
-
         } catch (error) {
-
-            console.error(
-                'Dashboard error:',
-                error
-            );
-
-            const tbody =
-                document.getElementById(
-                    'employee-table'
-                );
-
+            console.error('Dashboard error:', error);
+            const tbody = document.getElementById('employee-table');
             if (tbody) {
-
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8"
-                            class="p-12 text-center text-slate-500">
-
-                            <i class="fa-solid fa-circle-exclamation text-rose-500 text-2xl mb-3"></i>
-
-                            <br>
-
-                            <span class="text-xs font-bold">
-                                ${escapeHtml(
-                                    error.message ||
-                                    'Unable to load attendance data.'
-                                )}
-                            </span>
-
+                        <td colspan="8" class="p-12 text-center text-slate-500">
+                            <i class="fa-solid fa-circle-exclamation text-rose-500 text-2xl mb-3"></i><br>
+                            <span class="text-xs font-bold">${escapeHtml(error.message || 'Unable to load attendance data.')}</span>
                         </td>
                     </tr>
                 `;
@@ -1627,1525 +774,428 @@ LOG MODAL
         }
     }
 
-    /* =====================================================
-       SIDEBAR
-    ===================================================== */
-
     function updateSidebarBadges() {
+        const stats = rawDataCache.stats || {};
+        const voidedLogs = rawDataCache.voidedLogs || [];
 
-        const stats =
-            rawDataCache.stats ||
-            {};
+        setText('badge-all', stats.totalHeadcount || 0);
+        setText('badge-onduty', stats.currentlyActive || 0);
+        setText('badge-late', stats.lateArrivals || 0);
+        setText('badge-overtime', stats.overtimeWorkers || 0);
+        setText('badge-voided', voidedLogs.length);
 
-        const voidedLogs =
-            rawDataCache.voidedLogs ||
-            [];
-
-        setText(
-            'badge-all',
-            stats.totalHeadcount || 0
-        );
-
-        setText(
-            'badge-onduty',
-            stats.currentlyActive || 0
-        );
-
-        setText(
-            'badge-late',
-            stats.lateArrivals || 0
-        );
-
-        setText(
-            'badge-overtime',
-            stats.overtimeWorkers || 0
-        );
-
-        setText(
-            'badge-voided',
-            voidedLogs.length
-        );
-
-        setText(
-            'stat-total',
-            stats.totalHeadcount || 0
-        );
-
-        setText(
-            'stat-active',
-            stats.currentlyActive || 0
-        );
-
-        setText(
-            'stat-late',
-            stats.lateArrivals || 0
-        );
-
-        setText(
-            'stat-punctuality',
-            `${stats.punctualityRate ?? 100}%`
-        );
-
-        setText(
-            'stat-ot',
-            `${stats.totalOTAccumulated || 0} hrs`
-        );
-
-        setText(
-            'stat-avg',
-            `${stats.averageWorkHours || 0} hrs`
-        );
+        setText('stat-total', stats.totalHeadcount || 0);
+        setText('stat-active', stats.currentlyActive || 0);
+        setText('stat-late', stats.lateArrivals || 0);
+        setText('stat-punctuality', `${stats.punctualityRate ?? 100}%`);
+        setText('stat-ot', `${stats.totalOTAccumulated || 0} hrs`);
+        setText('stat-avg', `${stats.averageWorkHours || 0} hrs`);
     }
 
-    function setText(
-        id,
-        value
-    ) {
-
-        const element =
-            document.getElementById(
-                id
-            );
-
-        if (element) {
-            element.innerText =
-                value;
-        }
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) element.innerText = value;
     }
 
-    /* =====================================================
-       TABS
-    ===================================================== */
-
-    function switchTab(
-        tabName
-    ) {
-
-        currentTab =
-            tabName;
-
-        [
-            'all',
-            'onduty',
-            'late',
-            'overtime',
-            'history',
-            'voided',
-            'activity'
-        ].forEach(
-            function (tab) {
-
-                const button =
-                    document.getElementById(
-                        `nav-${tab}`
-                    );
-
-                if (button) {
-
-                    button.classList.toggle(
-                        'active',
-                        tab ===
-                            tabName
-                    );
-                }
+    function switchTab(tabName) {
+        currentTab = tabName;
+        ['all', 'onduty', 'late', 'overtime', 'history', 'voided', 'activity'].forEach(tab => {
+            const button = document.getElementById(`nav-${tab}`);
+            if (button) {
+                button.classList.toggle('active', tab === tabName);
             }
-        );
-
+        });
         renderCurrentTab();
     }
 
     function renderCurrentTab() {
-
-        /*
-         * The original dashboard only had
-         * five tab IDs. Unknown tabs fall
-         * safely back to All Attendance.
-         */
-
-        switch (
-            currentTab
-        ) {
-
+        switch (currentTab) {
             case 'onduty':
-                renderEmployeeFilter(
-                    'On-Duty Personnel',
-                    'Employees currently clocked in.',
-                    employee =>
-                        employee.isActive
-                );
+                renderEmployeeFilter('On-Duty Personnel', 'Employees currently clocked in.', e => e.isActive);
                 break;
-
             case 'late':
-                renderEmployeeFilter(
-                    'Late Arrival Exceptions',
-                    'Attendance exceptions requiring review.',
-                    employee =>
-                        employee.isLate
-                );
+                renderEmployeeFilter('Late Arrival Exceptions', 'Attendance exceptions requiring review.', e => e.isLate);
                 break;
-
             case 'overtime':
-                renderEmployeeFilter(
-                    'Overtime Roster',
-                    'Employees with accumulated overtime.',
-                    employee =>
-                        Number(
-                            employee.overtimeHours
-                        ) > 0
-                );
+                renderEmployeeFilter('Overtime Roster', 'Employees with accumulated overtime.', e => Number(e.overtimeHours) > 0);
                 break;
-
             case 'voided':
                 renderVoidedTable();
                 break;
-
             case 'history':
                 renderHistoryTable();
                 break;
-
             case 'activity':
                 renderActivityTable();
                 break;
-
             case 'all':
             default:
-                renderEmployeeFilter(
-                    'All Employee Attendance',
-                    'Real-time attendance telemetry and supervisor analytics.',
-                    () => true
-                );
+                renderEmployeeFilter('All Employee Attendance', 'Real-time attendance telemetry and supervisor analytics.', () => true);
                 break;
         }
     }
 
-    function renderEmployeeFilter(
-        title,
-        subtitle,
-        filter
-    ) {
-
-        updateViewHeader(
-            title,
-            subtitle
-        );
-
-        const tbody =
-            document.getElementById(
-                'employee-table'
-            );
-
+    function renderEmployeeFilter(title, subtitle, filter) {
+        updateViewHeader(title, subtitle);
+        const tbody = document.getElementById('employee-table');
         if (!tbody) return;
 
-        const employees =
-            (
-                rawDataCache.employees ||
-                []
-            ).filter(
-                filter
-            );
-
+        const employees = (rawDataCache.employees || []).filter(filter);
         tbody.innerHTML = '';
 
         if (!employees.length) {
-
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8"
-                        class="p-12 text-center text-slate-500">
-
+                    <td colspan="8" class="p-12 text-center text-slate-500">
                         <i class="fa-solid fa-inbox text-xl mb-2 block text-slate-300"></i>
-
-                        <span>
-                            No attendance records found for this view.
-                        </span>
-
+                        <span>No attendance records found for this view.</span>
                     </td>
                 </tr>
             `;
-
             return;
         }
 
-        employees.forEach(
-            employee => {
+        employees.forEach(employee => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 transition-colors';
+            const isLate = Boolean(employee.isLate);
+            const isActive = Boolean(employee.isActive);
 
-                const tr =
-                    document.createElement(
-                        'tr'
-                    );
+            const sourceBadge = employee.isEdited
+                ? `<span class="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-bold"><i class="fa-solid fa-pen text-[8px] mr-1"></i>Manual Override</span>`
+                : `<span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-fingerprint text-[8px] mr-1"></i>Tikix Terminal</span>`;
 
-                tr.className =
-                    'hover:bg-slate-50 transition-colors';
+            const statusBadge = isActive
+                ? `<span class="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-bold flex items-center gap-1.5 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>${escapeHtml(employee.currentState || 'ACTIVE')}</span>`
+                : `<span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold flex items-center gap-1.5 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>OFF DUTY</span>`;
 
-                const isLate =
-                    Boolean(
-                        employee.isLate
-                    );
-
-                const isActive =
-                    Boolean(
-                        employee.isActive
-                    );
-
-                const sourceBadge =
-                    employee.isEdited
-
-                        ? `
-                            <span class="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-bold">
-                                <i class="fa-solid fa-pen text-[8px] mr-1"></i>
-                                Manual Override
-                            </span>
-                        `
-
-                        : `
-                            <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold">
-                                <i class="fa-solid fa-fingerprint text-[8px] mr-1"></i>
-                                Tikix Terminal
-                            </span>
-                        `;
-
-                const statusBadge =
-                    isActive
-
-                        ? `
-                            <span class="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-bold flex items-center gap-1.5 w-fit">
-                                <span class="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
-                                ${escapeHtml(
-                                    employee.currentState ||
-                                    'ACTIVE'
-                                )}
-                            </span>
-                        `
-
-                        : `
-                            <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-bold flex items-center gap-1.5 w-fit">
-                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                OFF DUTY
-                            </span>
-                        `;
-
-                tr.innerHTML = `
-
-                    <td class="px-6 py-4">
-
-                        <div class="flex items-center gap-3">
-
-                            <div class="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center font-bold text-purple-700 font-mono">
-
-                                ${escapeHtml(
-                                    String(
-                                        employee.userId ||
-                                        'EM'
-                                    ).substring(
-                                        0,
-                                        2
-                                    )
-                                )}
-
-                            </div>
-
-                            <div>
-
-                                <div class="flex items-center gap-2">
-
-                                    <span class="font-bold text-slate-800 font-mono">
-
-                                        ${escapeHtml(
-                                            employee.userId ||
-                                            'Unknown'
-                                        )}
-
-                                    </span>
-
-                                    ${
-                                        isLate
-                                            ? `
-                                                <span class="px-1.5 py-0.2 rounded bg-rose-50 text-rose-600 text-[9px] font-bold border border-rose-200">
-                                                    LATE ${employee.minutesLate || 0}m
-                                                </span>
-                                            `
-                                            : ''
-                                    }
-
-                                </div>
-
-                                <div class="mt-1">
-                                    ${statusBadge}
-                                </div>
-
-                            </div>
-
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center font-bold text-purple-700 font-mono">
+                            ${escapeHtml(String(employee.userId || 'EM').substring(0, 2))}
                         </div>
-
-                    </td>
-
-                    <td class="px-4 py-4 font-mono text-slate-600">
-                        ${escapeHtml(
-                            employee.timeIn ||
-                            '--'
-                        )}
-                    </td>
-
-                    <td class="px-4 py-4 font-mono text-slate-500">
-                        ${escapeHtml(
-                            employee.timeOut ||
-                            '--'
-                        )}
-                    </td>
-
-                    <td class="px-4 py-4 font-mono text-slate-500">
-                        ${employee.breakMinutes || 0} m
-                    </td>
-
-                    <td class="px-4 py-4 font-mono font-bold text-slate-800">
-                        ${employee.netWorkHours || 0} h
-                    </td>
-
-                    <td class="px-4 py-4 font-mono font-bold ${
-                        Number(
-                            employee.overtimeHours
-                        ) > 0
-                            ? 'text-amber-600'
-                            : 'text-slate-400'
-                    }">
-                        ${employee.overtimeHours || 0} h
-                    </td>
-
-                    <td class="px-4 py-4">
-                        ${sourceBadge}
-                    </td>
-
-                    <td class="px-6 py-4 text-right">
-
-                        <button
-                            onclick="openLogsModal('${safeAttribute(employee.userId)}')"
-                            class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-600 border border-teal-200 text-teal-700 hover:text-white text-xs font-bold transition">
-
-                            Inspect
-
-                        </button>
-
-                    </td>
-                `;
-
-                tbody.appendChild(
-                    tr
-                );
-            }
-        );
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-800 font-mono">${escapeHtml(employee.userId || 'Unknown')}</span>
+                                ${isLate ? `<span class="px-1.5 py-0.2 rounded bg-rose-50 text-rose-600 text-[9px] font-bold border border-rose-200">LATE ${employee.minutesLate || 0}m</span>` : ''}
+                            </div>
+                            <div class="mt-1">${statusBadge}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-4 font-mono text-slate-600">${escapeHtml(employee.timeIn || '--')}</td>
+                <td class="px-4 py-4 font-mono text-slate-500">${escapeHtml(employee.timeOut || '--')}</td>
+                <td class="px-4 py-4 font-mono text-slate-500">${employee.breakMinutes || 0} m</td>
+                <td class="px-4 py-4 font-mono font-bold text-slate-800">${employee.netWorkHours || 0} h</td>
+                <td class="px-4 py-4 font-mono font-bold ${Number(employee.overtimeHours) > 0 ? 'text-amber-600' : 'text-slate-400'}">${employee.overtimeHours || 0} h</td>
+                <td class="px-4 py-4">${sourceBadge}</td>
+                <td class="px-6 py-4 text-right">
+                    <button onclick="openLogsModal('${safeAttribute(employee.userId)}')" class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-600 border border-teal-200 text-teal-700 hover:text-white text-xs font-bold transition">Inspect</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
-
-    /* =====================================================
-       HISTORY
-    ===================================================== */
 
     async function renderHistoryTable() {
-
-        updateViewHeader(
-            'Attendance History',
-            'Historical attendance records and punch activity.'
-        );
-
-        const tbody =
-            document.getElementById(
-                'employee-table'
-            );
-
+        updateViewHeader('Attendance History', 'Historical attendance records and punch activity.');
+        const tbody = document.getElementById('employee-table');
         if (!tbody) return;
 
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8"
-                    class="p-12 text-center text-slate-500">
-
-                    <i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl"></i>
-
-                    <div class="mt-3">
-                        Loading attendance history...
-                    </div>
-
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl"></i><div class="mt-3">Loading attendance history...</div></td></tr>`;
 
         try {
+            const response = await fetch('/api/hr-history', {
+                headers: { Authorization: `Bearer ${authToken}` }
+            });
 
-            const response =
-                await fetch(
-                    '/api/hr-history',
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${authToken}`
-                        }
-                    }
-                );
-
-            if (
-                response.status ===
-                401
-            ) {
-                logoutHR();
-                return;
-            }
-
-            const data =
-                await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    'Unable to load history.'
-                );
-            }
+            if (response.status === 401) { logoutHR(); return; }
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Unable to load history.');
 
             tbody.innerHTML = '';
-
-            const records =
-                data.records || [];
+            const records = data.records || [];
 
             if (!records.length) {
-
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8"
-                            class="p-12 text-center text-slate-500">
-
-                            <i class="fa-solid fa-clock-rotate-left text-xl text-slate-300 mb-2"></i>
-
-                            <br>
-
-                            No historical attendance records found.
-
-                        </td>
-                    </tr>
-                `;
-
+                tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-clock-rotate-left text-xl text-slate-300 mb-2"></i><br>No historical attendance records found.</td></tr>`;
                 return;
             }
 
-            records.forEach(
-                log => {
-
-                    const tr =
-                        document.createElement(
-                            'tr'
-                        );
-
-                    tr.className =
-                        'hover:bg-slate-50';
-
-                    tr.innerHTML = `
-
-                        <td class="px-6 py-4 font-bold font-mono">
-                            ${escapeHtml(
-                                log.user_id
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4 font-mono">
-                            ${formatDateTime(
-                                log.timestamp
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4 font-bold">
-                            ${escapeHtml(
-                                log.state
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4">
-                            ${escapeHtml(
-                                log.status
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4">
-                            ${
-                                log.is_manual
-                                    ? 'Manual Override'
-                                    : 'Terminal'
-                            }
-                        </td>
-
-                        <td class="px-4 py-4">
-                            ${escapeHtml(
-                                log.override_reason ||
-                                '--'
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4">
-                            ${escapeHtml(
-                                log.void_reason ||
-                                '--'
-                            )}
-                        </td>
-
-                        <td class="px-6 py-4 text-right">
-                            ${log.status === 'VALID'
-                                ? `
-                                    <button
-                                        onclick="voidPunch('${safeAttribute(log.id)}')"
-                                        class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 border border-rose-200 text-rose-600 hover:text-white text-xs font-bold">
-                                        Void
-                                    </button>
-                                `
-                                : `
-                                    <span class="text-slate-300">
-                                        VOIDED
-                                    </span>
-                                `
-                            }
-                        </td>
-                    `;
-
-                    tbody.appendChild(
-                        tr
-                    );
-                }
-            );
-
-        } catch (error) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8"
-                        class="p-12 text-center text-rose-500">
-
-                        ${escapeHtml(
-                            error.message
-                        )}
-
+            records.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold font-mono">${escapeHtml(log.user_id)}</td>
+                    <td class="px-4 py-4 font-mono">${formatDateTime(log.timestamp)}</td>
+                    <td class="px-4 py-4 font-bold">${escapeHtml(log.state)}</td>
+                    <td class="px-4 py-4">${escapeHtml(log.status)}</td>
+                    <td class="px-4 py-4">${log.is_manual ? 'Manual Override' : 'Terminal'}</td>
+                    <td class="px-4 py-4">${escapeHtml(log.override_reason || '--')}</td>
+                    <td class="px-4 py-4">${escapeHtml(log.void_reason || '--')}</td>
+                    <td class="px-6 py-4 text-right">
+                        ${log.status === 'VALID' ? `<button onclick="voidPunch('${safeAttribute(log.id)}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 border border-rose-200 text-rose-600 hover:text-white text-xs font-bold">Void</button>` : `<span class="text-slate-300">VOIDED</span>`}
                     </td>
-                </tr>
-            `;
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-rose-500">${escapeHtml(error.message)}</td></tr>`;
         }
     }
-
-    /* =====================================================
-       VOIDED
-    ===================================================== */
 
     function renderVoidedTable() {
-
-        updateViewHeader(
-            'Voided Audit Trail',
-            'Soft-voided historical attendance records.'
-        );
-
-        const tbody =
-            document.getElementById(
-                'employee-table'
-            );
-
+        updateViewHeader('Voided Audit Trail', 'Soft-voided historical attendance records.');
+        const tbody = document.getElementById('employee-table');
         if (!tbody) return;
 
         tbody.innerHTML = '';
-
-        const voided =
-            rawDataCache.voidedLogs ||
-            [];
+        const voided = rawDataCache.voidedLogs || [];
 
         if (!voided.length) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8"
-                        class="p-12 text-center text-slate-500">
-
-                        <i class="fa-solid fa-shield-check text-xl text-slate-300 mb-2"></i>
-
-                        <br>
-
-                        Audit log clear. No voided records found.
-
-                    </td>
-                </tr>
-            `;
-
+            tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-shield-check text-xl text-slate-300 mb-2"></i><br>Audit log clear. No voided records found.</td></tr>`;
             return;
         }
 
-        voided.forEach(
-            log => {
-
-                const tr =
-                    document.createElement(
-                        'tr'
-                    );
-
-                tr.className =
-                    'hover:bg-slate-50';
-
-                tr.innerHTML = `
-
-                    <td class="px-6 py-4 font-bold font-mono">
-                        ${escapeHtml(
-                            log.user_id
-                        )}
-                    </td>
-
-                    <td class="px-4 py-4 font-mono"
-                        colspan="2">
-
-                        ${formatDateTime(
-                            log.timestamp
-                        )}
-
-                    </td>
-
-                    <td class="px-4 py-4 font-bold text-rose-600">
-                        ${escapeHtml(
-                            log.state
-                        )}
-                    </td>
-
-                    <td class="px-4 py-4 italic text-slate-500"
-                        colspan="2">
-
-                        ${escapeHtml(
-                            log.void_reason ||
-                            'Admin Voided'
-                        )}
-
-                    </td>
-
-                    <td class="px-4 py-4">
-
-                        <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">
-                            VOIDED
-                        </span>
-
-                    </td>
-
-                    <td class="px-6 py-4 text-right">
-                        --
-                    </td>
-
-                `;
-
-                tbody.appendChild(
-                    tr
-                );
-            }
-        );
+        voided.forEach(log => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50';
+            tr.innerHTML = `
+                <td class="px-6 py-4 font-bold font-mono">${escapeHtml(log.user_id)}</td>
+                <td class="px-4 py-4 font-mono" colspan="2">${formatDateTime(log.timestamp)}</td>
+                <td class="px-4 py-4 font-bold text-rose-600">${escapeHtml(log.state)}</td>
+                <td class="px-4 py-4 italic text-slate-500" colspan="2">${escapeHtml(log.void_reason || 'Admin Voided')}</td>
+                <td class="px-4 py-4"><span class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">VOIDED</span></td>
+                <td class="px-6 py-4 text-right">--</td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
-
-    /* =====================================================
-       SYSTEM ACTIVITY
-    ===================================================== */
 
     async function renderActivityTable() {
-
-        updateViewHeader(
-            'System Activity',
-            'Administrative actions, imports, authentication and audit events.'
-        );
-
-        const tbody =
-            document.getElementById(
-                'employee-table'
-            );
-
+        updateViewHeader('System Activity', 'Administrative actions, imports, authentication and audit events.');
+        const tbody = document.getElementById('employee-table');
         if (!tbody) return;
 
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8"
-                    class="p-12 text-center text-slate-500">
-
-                    <i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl"></i>
-
-                    <div class="mt-3">
-                        Loading system activity...
-                    </div>
-
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-teal-600 text-xl"></i><div class="mt-3">Loading system activity...</div></td></tr>`;
 
         try {
+            const response = await fetch('/api/system-activity', {
+                headers: { Authorization: `Bearer ${authToken}` }
+            });
 
-            const response =
-                await fetch(
-                    '/api/system-activity',
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${authToken}`
-                        }
-                    }
-                );
-
-            if (
-                response.status ===
-                401
-            ) {
-                logoutHR();
-                return;
-            }
-
-            const data =
-                await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    'Unable to load system activity.'
-                );
-            }
+            if (response.status === 401) { logoutHR(); return; }
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Unable to load system activity.');
 
             tbody.innerHTML = '';
-
-            const events =
-                data.events || [];
+            const events = data.events || [];
 
             if (!events.length) {
-
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8"
-                            class="p-12 text-center text-slate-500">
-
-                            No system activity has been recorded yet.
-
-                        </td>
-                    </tr>
-                `;
-
+                tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-500">No system activity has been recorded yet.</td></tr>`;
                 return;
             }
 
-            events.forEach(
-                event => {
-
-                    const tr =
-                        document.createElement(
-                            'tr'
-                        );
-
-                    tr.className =
-                        'hover:bg-slate-50';
-
-                    tr.innerHTML = `
-
-                        <td class="px-6 py-4 font-mono">
-                            ${formatDateTime(
-                                event.created_at
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4">
-
-                            <span class="px-2 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-bold">
-                                ${escapeHtml(
-                                    event.event_type
-                                )}
-                            </span>
-
-                        </td>
-
-                        <td class="px-4 py-4 font-mono">
-                            ${escapeHtml(
-                                event.actor_email ||
-                                '--'
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4 font-mono">
-                            ${escapeHtml(
-                                event.employee_id ||
-                                '--'
-                            )}
-                        </td>
-
-                        <td class="px-4 py-4"
-                            colspan="3">
-
-                            ${escapeHtml(
-                                event.description ||
-                                '--'
-                            )}
-
-                        </td>
-
-                        <td class="px-6 py-4 text-right">
-                            <span class="text-slate-300">
-                                AUDIT
-                            </span>
-                        </td>
-
-                    `;
-
-                    tbody.appendChild(
-                        tr
-                    );
-                }
-            );
-
+            events.forEach(event => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-mono">${formatDateTime(event.created_at)}</td>
+                    <td class="px-4 py-4"><span class="px-2 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-bold">${escapeHtml(event.event_type)}</span></td>
+                    <td class="px-4 py-4 font-mono">${escapeHtml(event.actor_email || '--')}</td>
+                    <td class="px-4 py-4 font-mono">${escapeHtml(event.employee_id || '--')}</td>
+                    <td class="px-4 py-4" colspan="3">${escapeHtml(event.description || '--')}</td>
+                    <td class="px-6 py-4 text-right"><span class="text-slate-300">AUDIT</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
         } catch (error) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8"
-                        class="p-12 text-center text-rose-500">
-
-                        ${escapeHtml(
-                            error.message
-                        )}
-
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-rose-500">${escapeHtml(error.message)}</td></tr>`;
         }
     }
 
-    /* =====================================================
-       VIEW HEADER
-    ===================================================== */
-
-    function updateViewHeader(
-        title,
-        subtitle
-    ) {
-
-        setText(
-            'view-title',
-            title
-        );
-
-        setText(
-            'view-subtitle',
-            subtitle
-        );
+    function updateViewHeader(title, subtitle) {
+        setText('view-title', title);
+        setText('view-subtitle', subtitle);
     }
 
-    /* =====================================================
-       LOG INSPECTION
-    ===================================================== */
+    function openLogsModal(userId) {
+        const employee = (rawDataCache.employees || []).find(e => String(e.userId) === String(userId));
+        if (!employee) return;
 
-    function openLogsModal(
-        userId
-    ) {
-
-        const employee =
-            (
-                rawDataCache.employees ||
-                []
-            ).find(
-                employee =>
-                    String(
-                        employee.userId
-                    ) ===
-                    String(userId)
-            );
-
-        if (!employee) {
-            return;
-        }
-
-        const tbody =
-            document.getElementById(
-                'logsTableBody'
-            );
-
+        const tbody = document.getElementById('logsTableBody');
         tbody.innerHTML = '';
-
-        const logs =
-            employee.rawLogs ||
-            [];
+        const logs = employee.rawLogs || [];
 
         if (!logs.length) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="4"
-                        class="p-8 text-center text-slate-400">
-
-                        No punch records.
-
-                    </td>
-                </tr>
-            `;
-
+            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-400">No punch records.</td></tr>`;
         } else {
-
-            logs.forEach(
-                log => {
-
-                    const tr =
-                        document.createElement(
-                            'tr'
-                        );
-
-                    tr.className =
-                        'hover:bg-slate-50';
-
-                    tr.innerHTML = `
-
-                        <td class="px-4 py-3 text-slate-500">
-                            ${formatDateTime(
-                                log.timestamp
-                            )}
-                        </td>
-
-                        <td class="px-4 py-3 font-bold text-slate-800">
-                            ${escapeHtml(
-                                log.state
-                            )}
-                        </td>
-
-                        <td class="px-4 py-3">
-
-                            <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold">
-                                ${escapeHtml(
-                                    log.status
-                                )}
-                            </span>
-
-                        </td>
-
-                        <td class="px-4 py-3 text-right">
-
-                            <button
-                                onclick="voidPunch('${safeAttribute(log.id)}')"
-                                class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-600 border border-rose-200 text-rose-600 hover:text-white text-[10px] font-bold transition">
-
-                                Void Log
-
-                            </button>
-
-                        </td>
-                    `;
-
-                    tbody.appendChild(
-                        tr
-                    );
-                }
-            );
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-slate-500">${formatDateTime(log.timestamp)}</td>
+                    <td class="px-4 py-3 font-bold text-slate-800">${escapeHtml(log.state)}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold">${escapeHtml(log.status)}</span></td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="voidPunch('${safeAttribute(log.id)}')" class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-600 border border-rose-200 text-rose-600 hover:text-white text-[10px] font-bold transition">Void Log</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        document
-            .getElementById(
-                'logsModal'
-            )
-            .classList.remove(
-                'hidden'
-            );
+        document.getElementById('logsModal').classList.remove('hidden');
     }
 
-    async function voidPunch(
-        id
-    ) {
-
-        const reason =
-            prompt(
-                'Enter mandatory audit reason for voiding this record:'
-            );
-
-        if (!reason ||
-            !reason.trim()
-        ) {
-            return;
-        }
+    async function voidPunch(id) {
+        const reason = prompt('Enter mandatory audit reason for voiding this record:');
+        if (!reason || !reason.trim()) return;
 
         try {
+            const response = await fetch('/api/punch/void', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                body: JSON.stringify({ id, reason: reason.trim() })
+            });
 
-            const response =
-                await fetch(
-                    '/api/punch/void',
-                    {
-                        method: 'POST',
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Unable to void punch.');
 
-                        headers: {
-                            'Content-Type':
-                                'application/json',
-
-                            Authorization:
-                                `Bearer ${authToken}`
-                        },
-
-                        body:
-                            JSON.stringify({
-                                id,
-                                reason:
-                                    reason.trim()
-                            })
-                    }
-                );
-
-            const data =
-                await response
-                    .json()
-                    .catch(
-                        () => ({})
-                    );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    'Unable to void punch.'
-                );
-            }
-
-            alert(
-                data.message ||
-                'Record voided successfully.'
-            );
-
+            alert(data.message || 'Record voided successfully.');
             closeLogsModal();
-
             await fetchDashboardData();
-
         } catch (error) {
-
-            alert(
-                error.message ||
-                'Unable to void punch record.'
-            );
+            alert(error.message || 'Unable to void punch record.');
         }
     }
 
-    /* =====================================================
-       MANUAL MODAL
-    ===================================================== */
-
     function openManualModal() {
-
         if (datePicker) {
-
-            document.getElementById(
-                'manualDate'
-            ).value =
-                datePicker.value ||
-                getToday();
+            document.getElementById('manualDate').value = datePicker.value || getToday();
         }
-
-        document
-            .getElementById(
-                'manualModal'
-            )
-            .classList.remove(
-                'hidden'
-            );
+        document.getElementById('manualModal').classList.remove('hidden');
     }
 
     function closeManualModal() {
-
-        document
-            .getElementById(
-                'manualModal'
-            )
-            .classList.add(
-                'hidden'
-            );
+        document.getElementById('manualModal').classList.add('hidden');
     }
 
     function closeLogsModal() {
-
-        document
-            .getElementById(
-                'logsModal'
-            )
-            .classList.add(
-                'hidden'
-            );
+        document.getElementById('logsModal').classList.add('hidden');
     }
 
-    /* =====================================================
-       MANUAL FORM
-    ===================================================== */
+    document.getElementById('manualPunchForm').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const payload = {
+            userId: document.getElementById('manualEmpId').value.trim(),
+            date: document.getElementById('manualDate').value,
+            time: document.getElementById('manualTime').value,
+            state: document.getElementById('manualState').value,
+            reason: document.getElementById('manualReason').value.trim()
+        };
 
-    document
-        .getElementById(
-            'manualPunchForm'
-        )
-        .addEventListener(
-            'submit',
-            async function (event) {
+        try {
+            const response = await fetch('/api/punch/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                body: JSON.stringify(payload)
+            });
 
-                event.preventDefault();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Unable to save manual override.');
 
-                const payload = {
+            alert(data.message || 'Manual override recorded.');
+            closeManualModal();
+            document.getElementById('manualPunchForm').reset();
+            await fetchDashboardData();
+        } catch (error) {
+            alert(error.message || 'Unable to save manual override.');
+        }
+    });
 
-                    userId:
-                        document
-                            .getElementById(
-                                'manualEmpId'
-                            )
-                            .value
-                            .trim(),
+    document.getElementById('logfile').addEventListener('change', function () {
+        if (this.files && this.files.length) {
+            document.getElementById('usbSubmitBtn').click();
+        }
+    });
 
-                    date:
-                        document
-                            .getElementById(
-                                'manualDate'
-                            )
-                            .value,
+    document.getElementById('usbForm').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
 
-                    time:
-                        document
-                            .getElementById(
-                                'manualTime'
-                            )
-                            .value,
+        try {
+            const response = await fetch('/api/upload-usb', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${authToken}` },
+                body: formData
+            });
 
-                    state:
-                        document
-                            .getElementById(
-                                'manualState'
-                            )
-                            .value,
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'USB import failed.');
 
-                    reason:
-                        document
-                            .getElementById(
-                                'manualReason'
-                            )
-                            .value
-                            .trim()
-                };
-
-                try {
-
-                    const response =
-                        await fetch(
-                            '/api/punch/manual',
-                            {
-                                method: 'POST',
-
-                                headers: {
-                                    'Content-Type':
-                                        'application/json',
-
-                                    Authorization:
-                                        `Bearer ${authToken}`
-                                },
-
-                                body:
-                                    JSON.stringify(
-                                        payload
-                                    )
-                            }
-                        );
-
-                    const data =
-                        await response
-                            .json()
-                            .catch(
-                                () => ({})
-                            );
-
-                    if (!response.ok) {
-                        throw new Error(
-                            data.error ||
-                            'Unable to save manual override.'
-                        );
-                    }
-
-                    alert(
-                        data.message ||
-                        'Manual override recorded.'
-                    );
-
-                    closeManualModal();
-
-                    document
-                        .getElementById(
-                            'manualPunchForm'
-                        )
-                        .reset();
-
-                    await fetchDashboardData();
-
-                } catch (error) {
-
-                    alert(
-                        error.message ||
-                        'Unable to save manual override.'
-                    );
-                }
-            }
-        );
-
-    /* =====================================================
-       USB
-    ===================================================== */
-
-    document
-        .getElementById(
-            'logfile'
-        )
-        .addEventListener(
-            'change',
-            function () {
-
-                if (
-                    this.files &&
-                    this.files.length
-                ) {
-
-                    document
-                        .getElementById(
-                            'usbSubmitBtn'
-                        )
-                        .click();
-                }
-            }
-        );
-
-    document
-        .getElementById(
-            'usbForm'
-        )
-        .addEventListener(
-            'submit',
-            async function (event) {
-
-                event.preventDefault();
-
-                const formData =
-                    new FormData(
-                        event.target
-                    );
-
-                try {
-
-                    const response =
-                        await fetch(
-                            '/api/upload-usb',
-                            {
-                                method: 'POST',
-
-                                headers: {
-                                    Authorization:
-                                        `Bearer ${authToken}`
-                                },
-
-                                body:
-                                    formData
-                            }
-                        );
-
-                    const data =
-                        await response
-                            .json()
-                            .catch(
-                                () => ({})
-                            );
-
-                    if (!response.ok) {
-                        throw new Error(
-                            data.error ||
-                            'USB import failed.'
-                        );
-                    }
-
-                    alert(
-                        data.message ||
-                        'USB import completed.'
-                    );
-
-                    event.target.reset();
-
-                    await fetchDashboardData();
-
-                } catch (error) {
-
-                    alert(
-                        error.message ||
-                        'USB import failed.'
-                    );
-                }
-            }
-        );
-
-    /* =====================================================
-       EVENTS
-    ===================================================== */
+            alert(data.message || 'USB import completed.');
+            event.target.reset();
+            await fetchDashboardData();
+        } catch (error) {
+            alert(error.message || 'USB import failed.');
+        }
+    });
 
     if (datePicker) {
-
-        datePicker.addEventListener(
-            'change',
-            function () {
-
-                fetchDashboardData();
-            }
-        );
+        datePicker.addEventListener('change', function () { fetchDashboardData(); });
     }
 
     if (socket) {
-
-        socket.on(
-            'dataRefreshed',
-            function () {
-
-                fetchDashboardData();
-            }
-        );
+        socket.on('dataRefreshed', function () { fetchDashboardData(); });
     }
 
-    document
-        .getElementById(
-            'manualModal'
-        )
-        .addEventListener(
-            'click',
-            function (event) {
+    document.getElementById('manualModal').addEventListener('click', function (e) {
+        if (e.target.id === 'manualModal') closeManualModal();
+    });
 
-                if (
-                    event.target.id ===
-                    'manualModal'
-                ) {
-                    closeManualModal();
-                }
-            }
-        );
+    document.getElementById('logsModal').addEventListener('click', function (e) {
+        if (e.target.id === 'logsModal') closeLogsModal();
+    });
 
-    document
-        .getElementById(
-            'logsModal'
-        )
-        .addEventListener(
-            'click',
-            function (event) {
-
-                if (
-                    event.target.id ===
-                    'logsModal'
-                ) {
-                    closeLogsModal();
-                }
-            }
-        );
-
-    document.addEventListener(
-        'keydown',
-        function (event) {
-
-            if (
-                event.key ===
-                'Escape'
-            ) {
-
-                closeManualModal();
-
-                closeLogsModal();
-            }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeManualModal();
+            closeLogsModal();
         }
-    );
+    });
 
-    /* =====================================================
-       HELPERS
-    ===================================================== */
-
-    function formatDateTime(
-        timestamp
-    ) {
-
-        if (!timestamp) {
-            return '--';
-        }
-
-        const date =
-            new Date(timestamp);
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-            return '--';
-        }
-
-        return date.toLocaleString(
-            [],
-            {
-                dateStyle: 'medium',
-                timeStyle: 'short'
-            }
-        );
+    function formatDateTime(timestamp) {
+        if (!timestamp) return '--';
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return '--';
+        return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
     }
 
-    function escapeHtml(
-        value
-    ) {
-
-        return String(
-            value ??
-            ''
-        )
-            .replace(
-                /&/g,
-                '&amp;'
-            )
-            .replace(
-                /</g,
-                '&lt;'
-            )
-            .replace(
-                />/g,
-                '&gt;'
-            )
-            .replace(
-                /"/g,
-                '&quot;'
-            )
-            .replace(
-                /'/g,
-                '&#039;'
-            );
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
-    function safeAttribute(
-        value
-    ) {
-
-        return String(
-            value ??
-            ''
-        )
-            .replace(
-                /\\/g,
-                '\\\\'
-            )
-            .replace(
-                /'/g,
-                "\\'"
-            );
+    function safeAttribute(value) {
+        return String(value ?? '')
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'");
     }
 
-    /* =====================================================
-       GLOBAL FUNCTIONS
-    ===================================================== */
-
-    window.showAuthSubForm =
-        showAuthSubForm;
-
-    window.logoutHR =
-        logoutHR;
-
-    window.openManualModal =
-        openManualModal;
-
-    window.closeManualModal =
-        closeManualModal;
-
-    window.openLogsModal =
-        openLogsModal;
-
-    window.closeLogsModal =
-        closeLogsModal;
-
-    window.voidPunch =
-        voidPunch;
-
-    window.switchTab =
-        switchTab;
-
+    window.showAuthSubForm = showAuthSubForm;
+    window.logoutHR = logoutHR;
+    window.openManualModal = openManualModal;
+    window.closeManualModal = closeManualModal;
+    window.openLogsModal = openLogsModal;
+    window.closeLogsModal = closeLogsModal;
+    window.voidPunch = voidPunch;
+    window.switchTab = switchTab;
+    window.safeAttribute = safeAttribute;
 })();
 </script>
 </body>
